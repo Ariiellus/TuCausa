@@ -9,6 +9,7 @@ export function useCampaignFactory() {
   const { address } = useAccount()
 
   const factoryAddress = CAMPAIGN_FACTORY_ADDRESS[chainId as keyof typeof CAMPAIGN_FACTORY_ADDRESS]
+  const isBaseNetwork = chainId === 8453
 
   // Read methods
   const { data: campaigns, isLoading: isLoadingCampaigns } = useReadContract({
@@ -33,7 +34,7 @@ export function useCampaignFactory() {
   const { writeContract: createCampaign, isPending: isCreating } = useWriteContract()
 
   const createNewCampaign = (title: string, description: string, goalAmount: bigint, ensSubdomain: string) => {
-    if (!factoryAddress) return
+    if (!factoryAddress || !isBaseNetwork) return
 
     createCampaign({
       address: factoryAddress,
@@ -48,6 +49,9 @@ export function useCampaignFactory() {
     campaigns: campaigns as string[] | undefined,
     campaignCount: campaignCount as bigint | undefined,
     usdcToken: usdcToken as string | undefined,
+    
+    // Network state
+    isBaseNetwork,
     
     // Loading states
     isLoadingCampaigns,

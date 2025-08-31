@@ -7,7 +7,7 @@ import { Wallet } from "lucide-react"
 import Link from "next/link"
 import { CAMPAIGN_FACTORY_ADDRESS, CAMPAIGN_FACTORY_ABI, CAMPAIGN_ABI } from "@/lib/contracts"
 import { createPublicClient, http } from "viem"
-import { base, baseSepolia } from "wagmi/chains"
+import { base } from "wagmi/chains"
 
 interface Campaign {
   id: `0x${string}`
@@ -27,25 +27,22 @@ const baseClient = createPublicClient({
   transport: http(),
 })
 
-const baseSepoliaClient = createPublicClient({
-  chain: baseSepolia,
-  transport: http(),
-})
+
 
 // Function to fetch campaign data from blockchain
 async function fetchCampaigns() {
   try {
-    // Only try Sepolia since Base Mainnet is not deployed yet
-    const sepoliaFactoryAddress = CAMPAIGN_FACTORY_ADDRESS[11155111]
-    if (!sepoliaFactoryAddress) {
-      console.error("No Sepolia factory address found")
+    // Fetch from Base Mainnet
+    const baseFactoryAddress = CAMPAIGN_FACTORY_ADDRESS[8453]
+    if (!baseFactoryAddress) {
+      console.error("No Base factory address found")
       return []
     }
 
-    console.log("Fetching campaigns from Sepolia factory:", sepoliaFactoryAddress)
+    console.log("Fetching campaigns from Base factory:", baseFactoryAddress)
     
-    const campaigns = await baseSepoliaClient.readContract({
-      address: sepoliaFactoryAddress as `0x${string}`,
+    const campaigns = await baseClient.readContract({
+      address: baseFactoryAddress as `0x${string}`,
       abi: CAMPAIGN_FACTORY_ABI,
       functionName: "getAllCampaigns",
     })
@@ -59,37 +56,37 @@ async function fetchCampaigns() {
             console.log("Fetching data for campaign:", campaignAddress)
             
             const [title, description, goalAmount, totalRaised, creator, state, ensSubdomain] = await Promise.all([
-              baseSepoliaClient.readContract({
+              baseClient.readContract({
                 address: campaignAddress as `0x${string}`,
                 abi: CAMPAIGN_ABI,
                 functionName: "title",
               }),
-              baseSepoliaClient.readContract({
+              baseClient.readContract({
                 address: campaignAddress as `0x${string}`,
                 abi: CAMPAIGN_ABI,
                 functionName: "description",
               }),
-              baseSepoliaClient.readContract({
+              baseClient.readContract({
                 address: campaignAddress as `0x${string}`,
                 abi: CAMPAIGN_ABI,
                 functionName: "goalAmount",
               }),
-              baseSepoliaClient.readContract({
+              baseClient.readContract({
                 address: campaignAddress as `0x${string}`,
                 abi: CAMPAIGN_ABI,
                 functionName: "totalRaised",
               }),
-              baseSepoliaClient.readContract({
+              baseClient.readContract({
                 address: campaignAddress as `0x${string}`,
                 abi: CAMPAIGN_ABI,
                 functionName: "creator",
               }),
-              baseSepoliaClient.readContract({
+              baseClient.readContract({
                 address: campaignAddress as `0x${string}`,
                 abi: CAMPAIGN_ABI,
                 functionName: "state",
               }),
-              baseSepoliaClient.readContract({
+              baseClient.readContract({
                 address: campaignAddress as `0x${string}`,
                 abi: CAMPAIGN_ABI,
                 functionName: "ensSubdomain",

@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useState } from "react"
 
 export function CreateCampaignForm() {
-  const { createNewCampaign, parseUSDC, isCreating, isConnected } = useTuCausa()
+  const { createNewCampaign, parseUSDC, isCreating, isConnected, isBaseNetwork } = useTuCausa()
   
   const [formData, setFormData] = useState({
     title: "",
@@ -56,6 +57,20 @@ export function CreateCampaignForm() {
       <Card>
         <CardContent className="p-6">
           <p className="text-center text-gray-600">Please connect your wallet to create a campaign</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+      if (!isBaseNetwork) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <Alert>
+            <AlertDescription>
+              Campaign creation is only available on Base network. Please switch to Base network to continue.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     )
@@ -127,7 +142,7 @@ export function CreateCampaignForm() {
           <Button 
             type="submit" 
             className="w-full"
-            disabled={isCreating}
+            disabled={isCreating || !isBaseNetwork}
           >
             {isCreating ? "Creating Campaign..." : "Create Campaign"}
           </Button>

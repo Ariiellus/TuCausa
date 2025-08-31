@@ -1,11 +1,9 @@
 // Smart contract addresses and ABIs
 export const CAMPAIGN_FACTORY_ADDRESS = {
-  11155111: "0x5969BFB1229ed461A4f9A163B548D30cdFfEdB59", // Sepolia
-  // 8453: "0x...", // Base Mainnet (to be deployed) - commented out until deployed
+  8453: "0xe46c683691aD993133CdE2A0cc19cCae724fE93d", // Base Mainnet
 } as const
 
 export const USDC_ADDRESS = {
-  11155111: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // Sepolia USDC
   8453: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Base Mainnet USDC
 } as const
 
