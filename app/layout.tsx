@@ -5,6 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import { Web3Provider } from "@/components/web3-provider"
 import { LanguageProvider } from "@/components/language-provider"
+import { FarcasterProvider } from "@/components/farcaster-provider"
 import { Suspense } from "react"
 import "./globals.css"
 
@@ -23,9 +24,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <Suspense fallback={<div>Loading...</div>}>
-          <LanguageProvider>
-            <Web3Provider>{children}</Web3Provider>
-          </LanguageProvider>
+          <FarcasterProvider>
+            <LanguageProvider>
+              <Web3Provider>{children}</Web3Provider>
+            </LanguageProvider>
+          </FarcasterProvider>
         </Suspense>
         <Analytics />
       </body>

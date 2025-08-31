@@ -11,6 +11,7 @@
   "dependencies": {
     "@coinbase/onchainkit": "latest",
     "@farcaster/frame-sdk": "^0.1.8",
+    "@farcaster/miniapp-sdk": "^0.1.0",
     "@filoz/synapse-sdk": "latest",
     "@hookform/resolvers": "^3.10.0",
     "@openzeppelin/contracts": "^5.4.0",
@@ -75,10 +76,10 @@
     "vue-router": "latest",
     "wagmi": "^2.16.0",
     "zod": "3.25.67"
-  },
-  "devDependencies": {
-
-    "@types/node": "^22",
+      },
+    "devDependencies": {
+      "@tailwindcss/postcss": "^4.1.9",
+      "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
@@ -90,7 +91,7 @@
     "mini-css-extract-plugin": "^2.9.4",
     "postcss": "^8.5",
     "prettier": "^3.5.3",
-    "tailwindcss": "^3.4.0",
+    "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",
     "typescript": "^5"
   }
