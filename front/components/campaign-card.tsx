@@ -1,214 +1,192 @@
 "use client"
 
-import { useTuCausa } from "@/hooks/use-tucausa"
-import { Button } from "@/components/ui/button"
+import { useReadContract } from "wagmi"
+import { formatUnits } from "viem"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Loader2 } from "lucide-react"
+import Link from "next/link"
+import { CAMPAIGN_ABI } from "@/lib/contracts"
 
 interface CampaignCardProps {
-  campaignAddress: string
+  campaignAddress: `0x${string}`
+  index: number
 }
 
-export function CampaignCard({ campaignAddress }: CampaignCardProps) {
-  const {
-    getCampaign,
-    formatUSDC,
-    getCampaignStateString,
-    getFundingProgress,
-    getVotingProgress,
-    isCampaignCreator,
-    hasUserDonated,
-    canUserVote,
-    canUserClaimRefund,
-    canCreatorClaimFunds,
-    isCampaignActive,
-    isCampaignInVoting,
-    parseUSDC,
-    isConnected,
-  } = useTuCausa()
+function getStateString(state: number): string {
+  switch (state) {
+    case 0:
+      return "Active"
+    case 1:
+      return "Under Review"
+    case 2:
+      return "Completed"
+    case 3:
+      return "Refunded"
+    default:
+      return "Unknown"
+  }
+}
 
-  const campaign = getCampaign(campaignAddress)
-  const [donationAmount, setDonationAmount] = useState("")
+export function CampaignCard({ campaignAddress, index }: CampaignCardProps) {
+  // Read campaign data using ABI methods
+  const { data: title, isLoading: isTitleLoading } = useReadContract({
+    address: campaignAddress,
+    abi: CAMPAIGN_ABI,
+    functionName: "title",
+  })
 
-  if (campaign.isLoading) {
+  const { data: description, isLoading: isDescriptionLoading } = useReadContract({
+    address: campaignAddress,
+    abi: CAMPAIGN_ABI,
+    functionName: "description",
+  })
+
+  const { data: goalAmount, isLoading: isGoalLoading } = useReadContract({
+    address: campaignAddress,
+    abi: CAMPAIGN_ABI,
+    functionName: "goalAmount",
+  })
+
+  const { data: totalRaised, isLoading: isRaisedLoading } = useReadContract({
+    address: campaignAddress,
+    abi: CAMPAIGN_ABI,
+    functionName: "totalRaised",
+  })
+
+  const { data: creator, isLoading: isCreatorLoading } = useReadContract({
+    address: campaignAddress,
+    abi: CAMPAIGN_ABI,
+    functionName: "creator",
+  })
+
+  const { data: state, isLoading: isStateLoading } = useReadContract({
+    address: campaignAddress,
+    abi: CAMPAIGN_ABI,
+    functionName: "state",
+  })
+
+  const { data: ensSubdomain, isLoading: isEnsLoading } = useReadContract({
+    address: campaignAddress,
+    abi: CAMPAIGN_ABI,
+    functionName: "ensSubdomain",
+  })
+
+  const isLoading = isTitleLoading || isDescriptionLoading || isGoalLoading || 
+                   isRaisedLoading || isCreatorLoading || isStateLoading || isEnsLoading
+
+  // Calculate progress
+  const progressPercentage = goalAmount && totalRaised ? 
+    Number((totalRaised * BigInt(100)) / goalAmount) : 0
+
+  // Format amounts
+  const goalFormatted = goalAmount ? formatUnits(goalAmount, 6) : "0"
+  const raisedFormatted = totalRaised ? formatUnits(totalRaised, 6) : "0"
+
+  if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-1/2 mb-4"></div>
-            <div className="h-2 bg-gray-200 rounded w-full mb-2"></div>
-            <div className="h-2 bg-gray-200 rounded w-2/3"></div>
+      <Card className="hover:shadow-lg transition-shadow">
+        <CardHeader>
+          <div className="flex justify-between items-start mb-2">
+            <Badge variant="outline">Loading...</Badge>
+            <Badge variant="outline" className="text-xs">
+              Base
+            </Badge>
+          </div>
+          <CardTitle className="text-lg">Campaign #{index + 1}</CardTitle>
+          <CardDescription>Loading campaign details...</CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-muted-foreground">Progress</span>
+                <span className="font-medium">Loading...</span>
+              </div>
+              <Progress value={0} className="h-2" />
+              <p className="text-xs text-muted-foreground mt-1">0% funded</p>
+            </div>
+
+            <div className="flex gap-2">
+              <Button className="flex-1" disabled>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Loading...
+              </Button>
+            </div>
+
+            <div className="text-xs text-muted-foreground">
+              <p>Address: {campaignAddress.slice(0, 6)}...{campaignAddress.slice(-4)}</p>
+            </div>
           </div>
         </CardContent>
       </Card>
     )
   }
 
-  const fundingProgress = getFundingProgress(campaignAddress)
-  const votingProgress = getVotingProgress(campaignAddress)
-  const isCreator = isCampaignCreator(campaignAddress)
-  const userDonated = hasUserDonated(campaignAddress)
-  const canVote = canUserVote(campaignAddress)
-  const canClaimRefund = canUserClaimRefund(campaignAddress)
-  const canClaimFunds = canCreatorClaimFunds(campaignAddress)
-  const isActive = isCampaignActive(campaignAddress)
-  const inVoting = isCampaignInVoting(campaignAddress)
-
-  const handleDonate = () => {
-    if (!donationAmount || !isConnected) return
-    const amount = parseUSDC(donationAmount)
-    campaign.donateToCampaign(amount)
-    setDonationAmount("")
-  }
-
-  const handleVote = (solved: boolean) => {
-    campaign.voteOnCampaign(solved)
-  }
-
-  const handleClaimRefund = () => {
-    campaign.claimUserRefund()
-  }
-
-  const handleClaimFunds = () => {
-    campaign.claimCampaignFunds()
-  }
+  const statusInfo = getStateString(Number(state || 0))
 
   return (
-    <Card className="w-full">
+    <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-xl">{campaign.title}</CardTitle>
-            <CardDescription className="mt-2">{campaign.description}</CardDescription>
-          </div>
-          <Badge variant={isActive ? "default" : inVoting ? "secondary" : "outline"}>
-            {getCampaignStateString(campaign.state)}
+        <div className="flex justify-between items-start mb-2">
+          <Badge
+            variant={
+              statusInfo === "Active"
+                ? "default"
+                : statusInfo === "Under Review"
+                  ? "secondary"
+                  : "outline"
+            }
+          >
+            {statusInfo}
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            Base
           </Badge>
         </div>
+        <CardTitle className="text-lg">{title || "Untitled Campaign"}</CardTitle>
+        <CardDescription>
+          {description || "No description available"}
+        </CardDescription>
       </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {/* Funding Progress */}
-        <div>
-          <div className="flex justify-between text-sm mb-2">
-            <span>Funding Progress</span>
-            <span>{formatUSDC(campaign.totalRaised)} / {formatUSDC(campaign.goalAmount)} USDC</span>
-          </div>
-          <Progress value={fundingProgress} className="h-2" />
-        </div>
 
-        {/* Campaign Stats */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
+      <CardContent>
+        <div className="space-y-4">
           <div>
-            <span className="text-gray-600">Creator:</span>
-            <p className="font-mono text-xs truncate">{campaign.creator}</p>
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-muted-foreground">Progress</span>
+              <span className="font-medium">
+                ${Number(raisedFormatted).toLocaleString()} / ${Number(goalFormatted).toLocaleString()}
+              </span>
+            </div>
+            <Progress value={progressPercentage} className="h-2" />
+            <p className="text-xs text-muted-foreground mt-1">
+              {Math.round(progressPercentage)}% funded
+            </p>
           </div>
-          <div>
-            <span className="text-gray-600">Donors:</span>
-            <p>{campaign.donorCount?.toString() || "0"}</p>
-          </div>
-          <div>
-            <span className="text-gray-600">ENS Subdomain:</span>
-            <p>{campaign.ensSubdomain}</p>
-          </div>
-          {userDonated && (
-            <div>
-              <span className="text-gray-600">Your Donation:</span>
-              <p>{formatUSDC(campaign.userDonation)} USDC</p>
-            </div>
-          )}
-        </div>
 
-        {/* Voting Status */}
-        {inVoting && campaign.votingStatus && (
-          <div className="border rounded-lg p-3">
-            <h4 className="font-medium mb-2">Voting Status</h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-600">Votes for Solved:</span>
-                <p>{campaign.votingStatus[0].toString()}</p>
-              </div>
-              <div>
-                <span className="text-gray-600">Votes for Not Solved:</span>
-                <p>{campaign.votingStatus[1].toString()}</p>
-              </div>
-            </div>
-            <div className="mt-2">
-              <div className="flex justify-between text-sm mb-1">
-                <span>Voting Progress</span>
-                <span>{votingProgress}%</span>
-              </div>
-              <Progress value={votingProgress} className="h-2" />
-            </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="space-y-2">
-          {/* Donate Button */}
-          {isActive && isConnected && (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Amount in USDC"
-                value={donationAmount}
-                onChange={(e) => setDonationAmount(e.target.value)}
-                className="flex-1 px-3 py-2 border rounded-md"
-              />
-              <Button 
-                onClick={handleDonate}
-                disabled={campaign.isDonating || !donationAmount}
-              >
-                {campaign.isDonating ? "Donating..." : "Donate"}
-              </Button>
-            </div>
-          )}
-
-          {/* Vote Buttons */}
-          {canVote && (
-            <div className="flex gap-2">
-              <Button 
-                variant="outline"
-                onClick={() => handleVote(true)}
-                disabled={campaign.isVoting}
-                className="flex-1"
-              >
-                {campaign.isVoting ? "Voting..." : "Vote Solved"}
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => handleVote(false)}
-                disabled={campaign.isVoting}
-                className="flex-1"
-              >
-                {campaign.isVoting ? "Voting..." : "Vote Not Solved"}
-              </Button>
-            </div>
-          )}
-
-          {/* Claim Buttons */}
-          {canClaimRefund && (
-            <Button 
-              onClick={handleClaimRefund}
-              disabled={campaign.isClaimingRefund}
-              className="w-full"
-            >
-              {campaign.isClaimingRefund ? "Claiming..." : "Claim Refund"}
+          <div className="flex gap-2">
+            <Button className="flex-1" asChild>
+              <Link href={`/campaign/${campaignAddress}`}>
+                {statusInfo === "Active" ? "Donate" : "View Details"}
+              </Link>
             </Button>
-          )}
+            {ensSubdomain && (
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`https://${ensSubdomain}.tucausa.eth`} target="_blank">
+                  ENS
+                </Link>
+              </Button>
+            )}
+          </div>
 
-          {canClaimFunds && (
-            <Button 
-              onClick={handleClaimFunds}
-              disabled={campaign.isClaimingFunds}
-              className="w-full"
-            >
-              {campaign.isClaimingFunds ? "Claiming..." : "Claim Funds"}
-            </Button>
-          )}
+          <div className="text-xs text-muted-foreground">
+            <p>Creator: {creator ? `${creator.slice(0, 6)}...${creator.slice(-4)}` : "Unknown"}</p>
+            <p>Campaign: {campaignAddress.slice(0, 6)}...{campaignAddress.slice(-4)}</p>
+          </div>
         </div>
       </CardContent>
     </Card>

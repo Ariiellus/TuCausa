@@ -1,13 +1,17 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { Wallet } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Wallet, Loader2, AlertCircle } from "lucide-react"
 import Link from "next/link"
-import { CAMPAIGN_FACTORY_ADDRESS, CAMPAIGN_FACTORY_ABI, CAMPAIGN_ABI } from "@/lib/contracts"
-import { createPublicClient, http } from "viem"
-import { base } from "wagmi/chains"
+import { CAMPAIGN_FACTORY_ADDRESS, CAMPAIGN_FACTORY_ABI } from "@/lib/contracts"
+import { useReadContract } from "wagmi"
+import { CampaignCard } from "@/components/campaign-card"
 
 interface Campaign {
   id: `0x${string}`
@@ -19,111 +23,6 @@ interface Campaign {
   state: string
   ensSubdomain: string
   chainId: number
-}
-
-// Create public clients for reading blockchain data
-const baseClient = createPublicClient({
-  chain: base,
-  transport: http(),
-})
-
-
-
-// Function to fetch campaign data from blockchain
-async function fetchCampaigns() {
-  try {
-    // Fetch from Base Mainnet
-    const baseFactoryAddress = CAMPAIGN_FACTORY_ADDRESS[8453]
-    if (!baseFactoryAddress) {
-      console.error("No Base factory address found")
-      return []
-    }
-
-    console.log("Fetching campaigns from Base factory:", baseFactoryAddress)
-    
-    const campaigns = await baseClient.readContract({
-      address: baseFactoryAddress as `0x${string}`,
-      abi: CAMPAIGN_FACTORY_ABI,
-      functionName: "getAllCampaigns",
-    })
-
-    console.log("Found campaigns:", campaigns)
-
-    if (campaigns && campaigns.length > 0) {
-      const campaignData = await Promise.all(
-        campaigns.map(async (campaignAddress) => {
-          try {
-            console.log("Fetching data for campaign:", campaignAddress)
-            
-            const [title, description, goalAmount, totalRaised, creator, state, ensSubdomain] = await Promise.all([
-              baseClient.readContract({
-                address: campaignAddress as `0x${string}`,
-                abi: CAMPAIGN_ABI,
-                functionName: "title",
-              }),
-              baseClient.readContract({
-                address: campaignAddress as `0x${string}`,
-                abi: CAMPAIGN_ABI,
-                functionName: "description",
-              }),
-              baseClient.readContract({
-                address: campaignAddress as `0x${string}`,
-                abi: CAMPAIGN_ABI,
-                functionName: "goalAmount",
-              }),
-              baseClient.readContract({
-                address: campaignAddress as `0x${string}`,
-                abi: CAMPAIGN_ABI,
-                functionName: "totalRaised",
-              }),
-              baseClient.readContract({
-                address: campaignAddress as `0x${string}`,
-                abi: CAMPAIGN_ABI,
-                functionName: "creator",
-              }),
-              baseClient.readContract({
-                address: campaignAddress as `0x${string}`,
-                abi: CAMPAIGN_ABI,
-                functionName: "state",
-              }),
-              baseClient.readContract({
-                address: campaignAddress as `0x${string}`,
-                abi: CAMPAIGN_ABI,
-                functionName: "ensSubdomain",
-              }),
-            ])
-
-            console.log("Campaign data fetched:", { title, description, goalAmount, totalRaised, creator, state, ensSubdomain })
-
-            return {
-              id: campaignAddress,
-              title: title as string,
-              description: description as string,
-              goalAmount: Number(goalAmount) / 1e6, // Convert from wei to USDC (6 decimals)
-              totalRaised: Number(totalRaised) / 1e6,
-              creator: creator as string,
-              state: getStateString(state as number),
-              ensSubdomain: ensSubdomain as string,
-              chainId: 8453,
-            }
-          } catch (error) {
-            console.error(`Error fetching campaign ${campaignAddress}:`, error)
-            return null
-          }
-        })
-      )
-
-      const validCampaigns = campaignData.filter(Boolean)
-      console.log("Valid campaigns:", validCampaigns)
-      return validCampaigns
-    }
-
-    console.log("No campaigns found")
-    return []
-  } catch (error) {
-    console.error("Error fetching campaigns:", error)
-    return []
-  }
 }
 
 function getStateString(state: number): string {
@@ -141,9 +40,80 @@ function getStateString(state: number): string {
   }
 }
 
-export default async function CausesPage() {
-  const campaigns = await fetchCampaigns()
-  const validCampaigns = campaigns.filter((campaign): campaign is Campaign => campaign !== null)
+export default function CausesPage() {
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Read campaign addresses from factory
+  const { data: campaignAddresses, error: factoryError } = useReadContract({
+    address: CAMPAIGN_FACTORY_ADDRESS[8453],
+    abi: CAMPAIGN_FACTORY_ABI,
+    functionName: "getAllCampaigns",
+  })
+
+  // Read campaign count
+  const { data: campaignCount } = useReadContract({
+    address: CAMPAIGN_FACTORY_ADDRESS[8453],
+    abi: CAMPAIGN_FACTORY_ABI,
+    functionName: "getCampaignCount",
+  })
+
+  useEffect(() => {
+    console.log("Campaign addresses:", campaignAddresses)
+    console.log("Campaign count:", campaignCount)
+    
+    if (factoryError) {
+      console.error("Factory error:", factoryError)
+      setError("Failed to load campaigns from factory")
+      setIsLoading(false)
+      return
+    }
+
+    if (!campaignAddresses || campaignAddresses.length === 0) {
+      console.log("No campaigns found")
+      setCampaigns([])
+      setIsLoading(false)
+      return
+    }
+
+    // For now, show a message that campaigns are being loaded
+    // In a real implementation, you'd fetch individual campaign data
+    setCampaigns([])
+    setIsLoading(false)
+  }, [campaignAddresses, factoryError, campaignCount])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center py-12">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading campaigns...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -154,6 +124,11 @@ export default async function CausesPage() {
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Local Causes</h1>
             <p className="text-muted-foreground">Support your community by donating to local causes</p>
+            {campaignCount && (
+              <p className="text-sm text-muted-foreground">
+                Total campaigns: {Number(campaignCount)}
+              </p>
+            )}
           </div>
           <Button asChild className="flex items-center gap-2">
             <Link href="/create">
@@ -163,71 +138,17 @@ export default async function CausesPage() {
           </Button>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {validCampaigns.map((cause) => {
-            const progressPercentage = (cause.totalRaised / cause.goalAmount) * 100
-
-            return (
-              <Card key={cause.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge
-                      variant={
-                        cause.state === "Active"
-                          ? "default"
-                          : cause.state === "Under Review"
-                            ? "secondary"
-                            : "outline"
-                      }
-                    >
-                      {cause.state}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      Base
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-lg">{cause.title}</CardTitle>
-                  <CardDescription>{cause.description}</CardDescription>
-                </CardHeader>
-
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-muted-foreground">Progress</span>
-                        <span className="font-medium">
-                          ${cause.totalRaised.toLocaleString()} / ${cause.goalAmount.toLocaleString()}
-                        </span>
-                      </div>
-                      <Progress value={progressPercentage} className="h-2" />
-                      <p className="text-xs text-muted-foreground mt-1">{Math.round(progressPercentage)}% funded</p>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button className="flex-1" asChild>
-                        <Link href={`/campaign/${cause.id}`}>
-                          {cause.state === "Active" ? "Donate" : "View Details"}
-                        </Link>
-                      </Button>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`https://${cause.ensSubdomain}`} target="_blank">
-                          ENS
-                        </Link>
-                      </Button>
-                    </div>
-
-                    <div className="text-xs text-muted-foreground">
-                      <p>Creator: {cause.creator.slice(0, 6)}...{cause.creator.slice(-4)}</p>
-                      <p>Campaign: {cause.id.slice(0, 6)}...{cause.id.slice(-4)}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-
-        {validCampaigns.length === 0 && (
+        {campaignAddresses && campaignAddresses.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {campaignAddresses.map((campaignAddress, index) => (
+              <CampaignCard 
+                key={campaignAddress} 
+                campaignAddress={campaignAddress} 
+                index={index} 
+              />
+            ))}
+          </div>
+        ) : (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">No causes found on blockchain</p>
             <Button asChild className="flex items-center gap-2">

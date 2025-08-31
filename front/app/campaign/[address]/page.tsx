@@ -44,77 +44,88 @@ export default function CampaignPage({ params }: CampaignPageProps) {
   // Network validation
   const isBaseNetwork = chainId === 8453
 
-
-
+  // Validate campaign address
+  const isValidAddress = address && address.length === 42 && address.startsWith('0x')
   
-  // Read campaign data
-  const { data: title } = useReadContract({
+  // Read campaign data with error handling
+  const { data: title, error: titleError } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "title",
+    query: { enabled: !!isValidAddress },
   })
 
-  const { data: description } = useReadContract({
+  const { data: description, error: descriptionError } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "description",
+    query: { enabled: !!isValidAddress },
   })
 
-  const { data: goalAmount } = useReadContract({
+  const { data: goalAmount, error: goalError } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "goalAmount",
+    query: { enabled: !!isValidAddress },
   })
 
-  const { data: totalRaised } = useReadContract({
+  const { data: totalRaised, error: raisedError } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "totalRaised",
+    query: { enabled: !!isValidAddress },
   })
 
-  const { data: creator } = useReadContract({
+  const { data: creator, error: creatorError } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "creator",
+    query: { enabled: !!isValidAddress },
   })
 
-  const { data: campaignState } = useReadContract({
+  const { data: campaignState, error: stateError } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "state",
+    query: { enabled: !!isValidAddress },
   })
 
-  const { data: userDonation } = useReadContract({
+  const { data: userDonation, error: donationError } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "donations",
     args: userAddress ? [userAddress] : undefined,
+    query: { enabled: !!isValidAddress && !!userAddress },
   })
 
-  const { data: usdcBalance } = useReadContract({
+  const { data: usdcBalance, error: balanceError } = useReadContract({
     address: USDC_ADDRESS[chainId as keyof typeof USDC_ADDRESS],
     abi: USDC_ABI,
     functionName: "balanceOf",
     args: userAddress ? [userAddress] : undefined,
+    query: { enabled: !!isValidAddress && !!userAddress },
   })
 
-  const { data: proofURI } = useReadContract({
+  const { data: proofURI, error: proofError } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "proofURI",
+    query: { enabled: !!isValidAddress },
   })
 
-  const { data: votingStatus } = useReadContract({
+  const { data: votingStatus, error: votingError } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "getVotingStatus",
+    query: { enabled: !!isValidAddress },
   })
 
-  const { data: hasVoted } = useReadContract({
+  const { data: hasVoted, error: hasVotedError } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "hasVoted",
     args: userAddress ? [userAddress] : undefined,
+    query: { enabled: !!isValidAddress && !!userAddress },
   })
 
   // Contract interactions
@@ -307,6 +318,53 @@ export default function CampaignPage({ params }: CampaignPageProps) {
     if (days > 0) return `${days}d ${hours}h remaining`
     if (hours > 0) return `${hours}h ${minutes}m remaining`
     return `${minutes}m remaining`
+  }
+
+  // Check for errors
+  const hasErrors = titleError || descriptionError || goalError || raisedError || creatorError || 
+                   stateError || donationError || balanceError || proofError || votingError || hasVotedError
+
+  // Check if campaign address is invalid
+  if (!isValidAddress) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Invalid campaign address: {address}
+              </AlertDescription>
+            </Alert>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Check if campaign doesn't exist or has errors
+  if (hasErrors) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Campaign not found or error loading campaign data. Please check the address and try again.
+              </AlertDescription>
+            </Alert>
+            <div className="mt-4">
+              <Button asChild variant="outline">
+                <Link href="/causes">Browse All Campaigns</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
