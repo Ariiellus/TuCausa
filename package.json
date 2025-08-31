@@ -43,6 +43,8 @@
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
     "@remix-run/react": "latest",
+    "@reown/appkit": "^1.8.1",
+    "@reown/appkit-adapter-wagmi": "^1.8.1",
     "@sveltejs/kit": "latest",
     "@swc/helpers": "^0.5.17",
     "@tanstack/react-query": "^5",
@@ -76,10 +78,10 @@
     "vue-router": "latest",
     "wagmi": "^2.16.0",
     "zod": "3.25.67"
-      },
-    "devDependencies": {
-      "@tailwindcss/postcss": "^4.1.9",
-      "@types/node": "^22",
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.9",
+    "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",

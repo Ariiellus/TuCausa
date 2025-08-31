@@ -1,9 +1,15 @@
+"use client"
+
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { useAccount, useConnect } from "wagmi"
+import { Wallet } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 // Mock data for now - will be replaced with real blockchain data
 const mockCauses = [
@@ -37,6 +43,36 @@ const mockCauses = [
 ]
 
 export default function CausesPage() {
+  const { address, isConnected } = useAccount()
+  const { connect, connectors, isPending } = useConnect()
+  const router = useRouter()
+  const [shouldRedirect, setShouldRedirect] = useState(false)
+  const [redirectPath, setRedirectPath] = useState('/create')
+
+  // Handle redirect after successful connection
+  useEffect(() => {
+    if (shouldRedirect && isConnected && address) {
+      router.push(redirectPath)
+      setShouldRedirect(false)
+      setRedirectPath('/create')
+    }
+  }, [shouldRedirect, isConnected, address, router, redirectPath])
+
+  const handleStartCause = () => {
+    if (isConnected && address) {
+      // If wallet is connected and has an address, redirect to create page
+      router.push('/create')
+    } else {
+      // If wallet is not connected, connect with Coinbase Wallet
+      const coinbaseConnector = connectors.find((connector) => connector.name === "Coinbase Wallet")
+      if (coinbaseConnector) {
+        setRedirectPath('/create')
+        setShouldRedirect(true) // Set flag to redirect after connection
+        connect({ connector: coinbaseConnector })
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -47,8 +83,9 @@ export default function CausesPage() {
             <h1 className="text-3xl font-bold text-foreground mb-2">Local Causes</h1>
             <p className="text-muted-foreground">Support your community by donating to local causes</p>
           </div>
-          <Button asChild>
-            <Link href="/create">Start a Cause</Link>
+          <Button onClick={handleStartCause} className="flex items-center gap-2">
+            <Wallet className="h-4 w-4" />
+            {isConnected ? "Start a Cause" : "Log In to Start"}
           </Button>
         </div>
 
@@ -90,10 +127,22 @@ export default function CausesPage() {
                     </div>
 
                     <div className="flex gap-2">
-                      <Button asChild className="flex-1">
-                        <Link href={`/campaign/${cause.id}`}>
-                          {cause.status === "Active" ? "Donate" : "View Details"}
-                        </Link>
+                      <Button 
+                        className="flex-1"
+                        onClick={() => {
+                          if (isConnected && address) {
+                            router.push(`/campaign/${cause.id}`)
+                          } else {
+                            const coinbaseConnector = connectors.find((connector) => connector.name === "Coinbase Wallet")
+                            if (coinbaseConnector) {
+                              setRedirectPath(`/campaign/${cause.id}`)
+                              setShouldRedirect(true)
+                              connect({ connector: coinbaseConnector })
+                            }
+                          }
+                        }}
+                      >
+                        {cause.status === "Active" ? "Donate" : "View Details"}
                       </Button>
                       <Button variant="outline" size="sm" asChild>
                         <Link href={`https://${cause.ensSubdomain}`} target="_blank">
@@ -111,8 +160,9 @@ export default function CausesPage() {
         {mockCauses.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">No causes found</p>
-            <Button asChild>
-              <Link href="/create">Create the First Cause</Link>
+            <Button onClick={handleStartCause} className="flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              {isConnected ? "Create the First Cause" : "Log In to Create"}
             </Button>
           </div>
         )}

@@ -85,7 +85,9 @@ export default {
     daysLeft: 'days left',
   },
   create: {
-    title: 'Create a New Cause',
+    title: 'Start a New Cause',
+    subtitle: 'Create a fundraising campaign for your local cause and get community support',
+    loginButton: 'Log In',
     form: {
       title: 'Campaign Title',
       titlePlaceholder: 'Enter campaign title',
@@ -96,5 +98,9 @@ export default {
       deadline: 'Deadline',
       deadlinePlaceholder: 'Select deadline',
     },
+  },
+  wallet: {
+    connectWallet: 'Log In',
+    chooseWallet: 'Choose your preferred wallet to connect',
   },
 } as const

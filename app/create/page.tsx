@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi"
+import { useState, useEffect } from "react"
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useConnect } from "wagmi"
 import { parseUnits } from "viem"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
@@ -12,21 +12,57 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { Loader2, CheckCircle, AlertCircle, Wallet } from "lucide-react"
 import { CAMPAIGN_FACTORY_ADDRESS, CAMPAIGN_FACTORY_ABI } from "@/lib/contracts"
 import { generateEnsSubdomain, getCampaignUrl } from "@/lib/ens-utils"
 import { useChainId } from "wagmi"
+import { useRouter } from "next/navigation"
+import { useI18n } from "@/lib/i18n"
 import Link from "next/link"
 
 export default function CreateCausePage() {
   const { address, isConnected } = useAccount()
+  const { connect, connectors } = useConnect()
   const chainId = useChainId()
+  const router = useRouter()
+  const t = useI18n()
   const [formData, setFormData] = useState({
     title: "",
     campaignTag: "",
     description: "",
     goalAmount: "",
   })
+
+  const handleConnect = () => {
+    const coinbaseConnector = connectors.find((connector) => connector.name === "Coinbase Wallet")
+    if (coinbaseConnector) {
+      connect({ connector: coinbaseConnector })
+    }
+  }
+
+  // Show Log In state if not connected
+  if (!isConnected || !address) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-foreground mb-2">{t('create.title')}</h1>
+              <p className="text-muted-foreground">
+                {t('create.subtitle')}
+              </p>
+            </div>
+            
+            <Button onClick={handleConnect} className="flex items-center gap-2 mx-auto">
+              <Wallet className="h-4 w-4" />
+              {t('create.loginButton')}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
   const [ensSubdomain, setEnsSubdomain] = useState("")
   const [tagError, setTagError] = useState("")
   const [createdCampaignAddress, setCreatedCampaignAddress] = useState("")
@@ -148,9 +184,9 @@ export default function CreateCausePage() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Start a New Cause</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">{t('create.title')}</h1>
             <p className="text-muted-foreground">
-              Create a fundraising campaign for your local cause and get community support
+              {t('create.subtitle')}
             </p>
           </div>
 
@@ -226,23 +262,16 @@ export default function CreateCausePage() {
                   </Alert>
                 )}
 
-                {!isConnected ? (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>Please connect your wallet to create a campaign</AlertDescription>
-                  </Alert>
-                ) : (
-                  <Button type="submit" className="w-full" disabled={isPending || isConfirming}>
-                    {isPending || isConfirming ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {isPending ? "Creating Campaign..." : "Confirming..."}
-                      </>
-                    ) : (
-                      "Create Campaign"
-                    )}
-                  </Button>
-                )}
+                <Button type="submit" className="w-full" disabled={isPending || isConfirming}>
+                  {isPending || isConfirming ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {isPending ? "Creating Campaign..." : "Confirming..."}
+                    </>
+                  ) : (
+                    "Create Campaign"
+                  )}
+                </Button>
               </form>
             </CardContent>
           </Card>

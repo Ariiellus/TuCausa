@@ -86,6 +86,8 @@ export default {
   },
   create: {
     title: 'Crear una Nueva Causa',
+    subtitle: 'Crea una campaña de recaudación para tu causa local y obtén apoyo comunitario',
+    loginButton: 'Iniciar Sesión',
     form: {
       title: 'Título de la Campaña',
       titlePlaceholder: 'Ingresa el título de la campaña',
@@ -96,5 +98,9 @@ export default {
       deadline: 'Fecha Límite',
       deadlinePlaceholder: 'Selecciona fecha límite',
     },
+  },
+  wallet: {
+    connectWallet: 'Conectar Billetera',
+    chooseWallet: 'Elige tu billetera preferida para conectar',
   },
 } as const
