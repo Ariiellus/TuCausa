@@ -139,7 +139,7 @@ export default function CampaignPage({ params }: CampaignPageProps) {
   })
 
   // Calculate progress
-  const progressPercentage = goalAmount && totalRaised ? Number((totalRaised * 100n) / goalAmount) : 0
+  const progressPercentage = goalAmount && totalRaised ? Number((totalRaised * BigInt(100)) / goalAmount) : 0
 
   // Format amounts
   const goalFormatted = goalAmount ? formatUnits(goalAmount, 6) : "0"
