@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from "wagmi"
 import { parseUnits, formatUnits } from "viem"
 import { Header } from "@/components/header"
@@ -30,20 +30,7 @@ import { useChainId } from "wagmi"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 
-interface CampaignData {
-  title: string
-  description: string
-  goalAmount: bigint
-  totalRaised: bigint
-  creator: string
-  state: number
-  proofURI: string
-  ensSubdomain: string
-  userDonation: bigint
-  hasVoted: boolean
-  votingStatus: [bigint, bigint, bigint, bigint] | null
-  usdcBalance: bigint
-}
+
 
 function getStateString(state: number): string {
   switch (state) {
@@ -68,7 +55,7 @@ export default function CampaignPage() {
   const { switchChain } = useSwitchChain()
   const [donationAmount, setDonationAmount] = useState("")
   const [step, setStep] = useState<"input" | "approve" | "donate">("input")
-  const [error, setError] = useState<string | null>(null)
+
   
   // Network validation
   const isBaseNetwork = chainId === 8453

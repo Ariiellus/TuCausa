@@ -1,6 +1,7 @@
 "use client"
 
 import { useAccount, useEnsAvatar, useEnsName } from 'wagmi'
+import Image from 'next/image'
 
 export const EnsProfile = () => {
   const { address } = useAccount()
@@ -23,8 +24,10 @@ export const EnsProfile = () => {
   return (
     <div className="flex items-center gap-2">
       {avatar ? (
-        <img 
+        <Image 
           src={avatar} 
+          width={32}
+          height={32}
           className="h-8 w-8 rounded-full object-cover" 
           alt="ENS Avatar"
         />

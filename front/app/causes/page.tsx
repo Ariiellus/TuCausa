@@ -3,9 +3,6 @@
 import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Wallet, Loader2, AlertCircle } from "lucide-react"
 import Link from "next/link"
@@ -13,35 +10,12 @@ import { CAMPAIGN_FACTORY_ADDRESS, CAMPAIGN_FACTORY_ABI } from "@/lib/contracts"
 import { useReadContract } from "wagmi"
 import { CampaignCard } from "@/components/campaign-card"
 
-interface Campaign {
-  id: `0x${string}`
-  title: string
-  description: string
-  goalAmount: number
-  totalRaised: number
-  creator: string
-  state: string
-  ensSubdomain: string
-  chainId: number
-}
 
-function getStateString(state: number): string {
-  switch (state) {
-    case 0:
-      return "Active"
-    case 1:
-      return "Under Review"
-    case 2:
-      return "Completed"
-    case 3:
-      return "Refunded"
-    default:
-      return "Unknown"
-  }
-}
+
+
 
 export default function CausesPage() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -72,14 +46,12 @@ export default function CausesPage() {
 
     if (!campaignAddresses || campaignAddresses.length === 0) {
       console.log("No campaigns found")
-      setCampaigns([])
       setIsLoading(false)
       return
     }
 
     // For now, show a message that campaigns are being loaded
     // In a real implementation, you'd fetch individual campaign data
-    setCampaigns([])
     setIsLoading(false)
   }, [campaignAddresses, factoryError, campaignCount])
 

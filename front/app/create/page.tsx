@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useConnect, useSwitchChain } from "wagmi"
 import { parseUnits } from "viem"
 import { Header } from "@/components/header"
@@ -16,7 +16,7 @@ import { Loader2, CheckCircle, AlertCircle, Wallet } from "lucide-react"
 import { CAMPAIGN_FACTORY_ADDRESS, CAMPAIGN_FACTORY_ABI } from "@/lib/contracts"
 import { generateEnsSubdomain, getCampaignUrl } from "@/lib/ens-utils"
 import { useChainId } from "wagmi"
-import { useRouter } from "next/navigation"
+
 import { useI18n } from "@/lib/i18n"
 import Link from "next/link"
 
@@ -25,7 +25,7 @@ export default function CreateCausePage() {
   const { connect, connectors } = useConnect()
   const chainId = useChainId()
   const { switchChain } = useSwitchChain()
-  const router = useRouter()
+
   const t = useI18n()
   
   // Network validation
@@ -35,6 +35,16 @@ export default function CreateCausePage() {
     campaignTag: "",
     description: "",
     goalAmount: "",
+  })
+
+  const [ensSubdomain, setEnsSubdomain] = useState("")
+  const [tagError, setTagError] = useState("")
+
+
+  const { writeContract, data: hash, isPending, error } = useWriteContract()
+
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash,
   })
 
   const handleConnect = () => {
@@ -67,15 +77,6 @@ export default function CreateCausePage() {
       </div>
     )
   }
-  const [ensSubdomain, setEnsSubdomain] = useState("")
-  const [tagError, setTagError] = useState("")
-  const [createdCampaignAddress, setCreatedCampaignAddress] = useState("")
-
-  const { writeContract, data: hash, isPending, error } = useWriteContract()
-
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  })
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))

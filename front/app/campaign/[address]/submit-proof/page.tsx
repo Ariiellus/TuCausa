@@ -154,7 +154,7 @@ export default function SubmitProofPage({ params }: SubmitProofPageProps) {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Donors will now review your proof and vote on whether the cause has been completed. You'll receive
+                    Donors will now review your proof and vote on whether the cause has been completed. You&apos;ll receive
                     the funds if the community approves your submission.
                   </AlertDescription>
                 </Alert>
@@ -259,7 +259,7 @@ export default function SubmitProofPage({ params }: SubmitProofPageProps) {
             </Button>
             <h1 className="text-3xl font-bold text-foreground mb-2">Submit Proof of Completion</h1>
             <p className="text-muted-foreground">
-              Upload evidence that your cause "{title}" has been completed successfully
+              Upload evidence that your cause &quot;{title}&quot; has been completed successfully
             </p>
           </div>
 
@@ -376,7 +376,7 @@ export default function SubmitProofPage({ params }: SubmitProofPageProps) {
             <h3 className="font-semibold mb-3">What happens next?</h3>
             <ol className="space-y-2 text-sm text-muted-foreground">
               <li>1. Your proof will be uploaded to Synapse for permanent storage on Filecoin</li>
-              <li>2. Campaign status changes to "Under Review"</li>
+              <li>2. Campaign status changes to &quot;Under Review&quot;</li>
               <li>3. Donors can view your proof and vote on completion</li>
               <li>4. If approved by the community, funds are released to you</li>
               <li>5. If not approved, donors can claim refunds</li>

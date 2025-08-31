@@ -2,7 +2,6 @@
 
 import { useTuCausa } from "@/hooks/use-tucausa"
 import { useCampaignFactory } from "@/hooks/use-campaign-factory"
-import { useUSDC } from "@/hooks/use-usdc"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -38,7 +37,7 @@ export function CreateCampaignForm() {
     }
 
     if (!isBaseNetwork) {
-      alert("Please switch to Base network to create campaigns. Use the 'Switch to Base' button in the header.")
+      alert("Please switch to Base network to create campaigns. Use the &apos;Switch to Base&apos; button in the header.")
       return
     }
 
@@ -159,7 +158,7 @@ export function CreateCampaignForm() {
               required
             />
             <p className="text-xs text-gray-600 mt-1">
-              This will be used for the campaign's ENS subdomain
+              This will be used for the campaign&apos;s ENS subdomain
             </p>
           </div>
 

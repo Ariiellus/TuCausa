@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverExternalPackages: ['@filoz/synapse-sdk'],
-  },
+
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
