@@ -35,15 +35,29 @@ export function ProofViewer({ proofURI, className }: ProofViewerProps) {
     const fetchProofData = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch(proofURI)
-        if (!response.ok) {
-          throw new Error("Failed to fetch proof data")
+        setError(null)
+        
+        // Check if this is a mock URL (for development)
+        if (proofURI.includes('mock_')) {
+          console.log("Mock proof URI detected, skipping fetch")
+          setError("Mock proof data - not available in production")
+          return
         }
+        
+        console.log("Fetching proof data from:", proofURI)
+        const response = await fetch(proofURI)
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+        
         const data = await response.json()
+        console.log("Proof data received:", data)
         setProofData(data)
       } catch (err) {
         console.error("Error fetching proof:", err)
-        setError("Failed to load proof data")
+        const errorMessage = err instanceof Error ? err.message : "Failed to load proof data"
+        setError(errorMessage)
       } finally {
         setIsLoading(false)
       }
@@ -51,6 +65,9 @@ export function ProofViewer({ proofURI, className }: ProofViewerProps) {
 
     if (proofURI) {
       fetchProofData()
+    } else {
+      setIsLoading(false)
+      setError("No proof URI provided")
     }
   }, [proofURI])
 
@@ -70,7 +87,14 @@ export function ProofViewer({ proofURI, className }: ProofViewerProps) {
       <Card className={className}>
         <CardContent className="py-8">
           <Alert variant="destructive">
-            <AlertDescription>{error || "No proof data available"}</AlertDescription>
+            <AlertDescription>
+              {error || "No proof data available"}
+              {error?.includes("Mock proof data") && (
+                <div className="mt-2 text-sm">
+                  This is development data and won't be available in production.
+                </div>
+              )}
+            </AlertDescription>
           </Alert>
         </CardContent>
       </Card>

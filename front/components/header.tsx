@@ -52,22 +52,19 @@ function WalletSection() {
 
   return (
     <>
-                    {isConnected ? (
-                <div className="flex items-center gap-2">
-                  <div className="text-xs text-muted-foreground">
-                    {chainId === 8453 ? "Base" : chainId === 1 ? "Ethereum" : `Chain ${chainId}`}
-                  </div>
-                  {chainId !== 8453 && (
-                    <Button variant="destructive" size="sm" onClick={handleSwitchToBase} className="bg-red-600 hover:bg-red-700">
-                      ⚠️ Switch to Base
-                    </Button>
-                  )}
-                  <EnsProfile />
-                  <Button variant="outline" size="sm" onClick={() => disconnect()}>
-                    {t('common.disconnect')}
-                  </Button>
-                </div>
-              ) : (
+      {isConnected ? (
+        <div className="flex items-center gap-2">
+          {chainId !== 8453 && (
+            <Button variant="destructive" size="sm" onClick={handleSwitchToBase} className="bg-red-600 hover:bg-red-700">
+              ⚠️ Switch to Base
+            </Button>
+          )}
+          <EnsProfile />
+          <Button variant="outline" size="sm" onClick={() => disconnect()}>
+            {t('common.disconnect')}
+          </Button>
+        </div>
+      ) : (
         <Button onClick={handleConnect} className="flex items-center gap-2">
           <Wallet className="h-4 w-4" />
           {t('common.connectWallet')}
@@ -120,9 +117,6 @@ function MobileWalletSection() {
     <>
       {isConnected ? (
         <div className="flex flex-col space-y-3">
-          <div className="text-xs text-muted-foreground">
-            {chainId === 8453 ? "Base Network" : chainId === 1 ? "Ethereum" : `Chain ${chainId}`}
-          </div>
           {chainId !== 8453 && (
             <Button variant="destructive" size="sm" onClick={handleSwitchToBase} className="bg-red-600 hover:bg-red-700">
               ⚠️ Switch to Base

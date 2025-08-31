@@ -1,9 +1,9 @@
 import { createConfig, http } from "wagmi"
-import { base } from "wagmi/chains"
+import { base, mainnet } from "wagmi/chains"
 import { coinbaseWallet, walletConnect } from "wagmi/connectors"
 
 export const config = createConfig({
-  chains: [base],
+  chains: [base, mainnet],
   connectors: [
     coinbaseWallet({
       appName: "TuCausa",
@@ -24,5 +24,6 @@ export const config = createConfig({
   ],
   transports: {
     [base.id]: http(),
+    [mainnet.id]: http(),
   },
 })

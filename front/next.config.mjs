@@ -10,9 +10,16 @@ const nextConfig = {
     unoptimized: true,
   },
   outputFileTracingRoot: process.cwd(),
-  webpack: (config) => {
-    config.externals.push("pino-pretty", "lokijs", "encoding");
-    return config;
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      }
+    }
+    return config
   },
 
   async redirects() {
@@ -23,6 +30,19 @@ const nextConfig = {
         permanent: false, // This creates a 307 redirect
       },
     ]
+  },
+
+  // Ensure proper client-side rendering for dynamic routes
+  experimental: {
+    serverComponentsExternalPackages: ['@wagmi/core', 'viem'],
+  },
+
+  // Ensure proper static generation
+  trailingSlash: false,
+  
+  // Handle environment variables
+  env: {
+    NEXT_PUBLIC_CHAIN_ID: '8453',
   },
 }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, use } from "react"
+import { useState, useEffect } from "react"
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from "wagmi"
 import { parseUnits, formatUnits } from "viem"
 import { Header } from "@/components/header"
@@ -28,18 +28,18 @@ import {
 import { CAMPAIGN_ABI, USDC_ADDRESS, USDC_ABI } from "@/lib/contracts"
 import { useChainId } from "wagmi"
 import Link from "next/link"
+import { useParams } from "next/navigation"
+import { ErrorBoundary } from "@/components/error-boundary"
 
-interface CampaignPageProps {
-  params: Promise<{ address: string }>
-}
-
-export default function CampaignPage({ params }: CampaignPageProps) {
-  const { address } = use(params)
+function CampaignPageContent() {
+  const params = useParams()
+  const address = params.address as string
   const { address: userAddress, isConnected } = useAccount()
   const chainId = useChainId()
   const { switchChain } = useSwitchChain()
   const [donationAmount, setDonationAmount] = useState("")
   const [step, setStep] = useState<"input" | "approve" | "donate">("input")
+  const [isClient, setIsClient] = useState(false)
   
   // Network validation
   const isBaseNetwork = chainId === 8453
@@ -47,85 +47,85 @@ export default function CampaignPage({ params }: CampaignPageProps) {
   // Validate campaign address
   const isValidAddress = address && address.length === 42 && address.startsWith('0x')
   
-  // Read campaign data with error handling
-  const { data: title, error: titleError } = useReadContract({
+  // Read campaign data with error handling - always call hooks
+  const { data: title, error: titleError, isLoading: isTitleLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "title",
-    query: { enabled: !!isValidAddress },
+    query: { enabled: !!isValidAddress && isClient },
   })
 
-  const { data: description, error: descriptionError } = useReadContract({
+  const { data: description, error: descriptionError, isLoading: isDescriptionLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "description",
-    query: { enabled: !!isValidAddress },
+    query: { enabled: !!isValidAddress && isClient },
   })
 
-  const { data: goalAmount, error: goalError } = useReadContract({
+  const { data: goalAmount, error: goalError, isLoading: isGoalLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "goalAmount",
-    query: { enabled: !!isValidAddress },
+    query: { enabled: !!isValidAddress && isClient },
   })
 
-  const { data: totalRaised, error: raisedError } = useReadContract({
+  const { data: totalRaised, error: raisedError, isLoading: isRaisedLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "totalRaised",
-    query: { enabled: !!isValidAddress },
+    query: { enabled: !!isValidAddress && isClient },
   })
 
-  const { data: creator, error: creatorError } = useReadContract({
+  const { data: creator, error: creatorError, isLoading: isCreatorLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "creator",
-    query: { enabled: !!isValidAddress },
+    query: { enabled: !!isValidAddress && isClient },
   })
 
-  const { data: campaignState, error: stateError } = useReadContract({
+  const { data: campaignState, error: stateError, isLoading: isStateLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "state",
-    query: { enabled: !!isValidAddress },
+    query: { enabled: !!isValidAddress && isClient },
   })
 
-  const { data: userDonation, error: donationError } = useReadContract({
+  const { data: userDonation, error: donationError, isLoading: isDonationLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "donations",
     args: userAddress ? [userAddress] : undefined,
-    query: { enabled: !!isValidAddress && !!userAddress },
+    query: { enabled: !!isValidAddress && !!userAddress && isClient },
   })
 
-  const { data: usdcBalance, error: balanceError } = useReadContract({
+  const { data: usdcBalance, error: balanceError, isLoading: isBalanceLoading } = useReadContract({
     address: USDC_ADDRESS[chainId as keyof typeof USDC_ADDRESS],
     abi: USDC_ABI,
     functionName: "balanceOf",
     args: userAddress ? [userAddress] : undefined,
-    query: { enabled: !!isValidAddress && !!userAddress },
+    query: { enabled: !!isValidAddress && !!userAddress && isClient },
   })
 
-  const { data: proofURI, error: proofError } = useReadContract({
+  const { data: proofURI, error: proofError, isLoading: isProofLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "proofURI",
-    query: { enabled: !!isValidAddress },
+    query: { enabled: !!isValidAddress && isClient },
   })
 
-  const { data: votingStatus, error: votingError } = useReadContract({
+  const { data: votingStatus, error: votingError, isLoading: isVotingLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "getVotingStatus",
-    query: { enabled: !!isValidAddress },
+    query: { enabled: !!isValidAddress && isClient },
   })
 
-  const { data: hasVoted, error: hasVotedError } = useReadContract({
+  const { data: hasVoted, error: hasVotedError, isLoading: isHasVotedLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "hasVoted",
     args: userAddress ? [userAddress] : undefined,
-    query: { enabled: !!isValidAddress && !!userAddress },
+    query: { enabled: !!isValidAddress && !!userAddress && isClient },
   })
 
   // Contract interactions
@@ -156,6 +156,28 @@ export default function CampaignPage({ params }: CampaignPageProps) {
     hash: refundHash,
   })
 
+  // Ensure we're on the client side
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Don't render anything until we're on the client
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center py-12">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  
   // Calculate progress
   const progressPercentage = goalAmount && totalRaised ? Number((totalRaised * BigInt(100)) / goalAmount) : 0
 
@@ -320,9 +342,31 @@ export default function CampaignPage({ params }: CampaignPageProps) {
     return `${minutes}m remaining`
   }
 
+  // Check loading state
+  const isLoading = isTitleLoading || isDescriptionLoading || isGoalLoading || isRaisedLoading || 
+                   isCreatorLoading || isStateLoading || isDonationLoading || isBalanceLoading ||
+                   isProofLoading || isVotingLoading || isHasVotedLoading
+
   // Check for errors
   const hasErrors = titleError || descriptionError || goalError || raisedError || creatorError || 
                    stateError || donationError || balanceError || proofError || votingError || hasVotedError
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center py-12">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading campaign data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Check if campaign address is invalid
   if (!isValidAddress) {
@@ -763,5 +807,13 @@ export default function CampaignPage({ params }: CampaignPageProps) {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function CampaignPage() {
+  return (
+    <ErrorBoundary>
+      <CampaignPageContent />
+    </ErrorBoundary>
   )
 }
