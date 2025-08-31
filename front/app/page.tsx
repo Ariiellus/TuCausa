@@ -6,6 +6,7 @@ import { Header } from "@/components/header"
 import { Heart, Users, Shield, Zap } from "lucide-react"
 import Link from "next/link"
 import { useI18n } from "@/lib/i18n"
+import { TuCausaLogoLarge, TuCausaLogoCompact } from "@/components/tucausa-logo"
 
 export default function HomePage() {
   const t = useI18n()
@@ -16,6 +17,9 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-8 md:py-16 text-center">
         <div className="max-w-3xl mx-auto">
+          <div className="flex justify-center mb-6">
+            <TuCausaLogoLarge />
+          </div>
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 md:mb-6 text-balance leading-tight">
             {t('hero.title')} <span className="text-primary">{t('hero.highlight')}</span>
           </h1>
@@ -148,7 +152,7 @@ export default function HomePage() {
           <div className="container mx-auto px-4 py-6 md:py-8">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
               <div className="flex items-center gap-2">
-                <Heart className="h-5 w-5 text-primary" />
+                <TuCausaLogoCompact />
                 <span className="font-semibold text-foreground">{t('header.title')}</span>
               </div>
               <p className="text-sm text-muted-foreground text-center md:text-left">{t('footer.powered_by')}</p>

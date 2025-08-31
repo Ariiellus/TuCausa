@@ -8,6 +8,7 @@ import { useI18n } from "@/lib/i18n"
 import { LanguageToggle } from "@/components/language-toggle"
 import { ClientOnly } from "@/components/client-only"
 import { EnsProfile } from "@/components/ens-profile"
+import { TuCausaLogoCompact } from "@/components/tucausa-logo"
 import { useState } from "react"
 
 function WalletSection() {
@@ -145,7 +146,7 @@ export function Header() {
     <header className="border-b border-border bg-background">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <Heart className="h-6 w-6 text-primary" />
+          <TuCausaLogoCompact />
           <span className="text-xl font-bold text-foreground">{t('header.title')}</span>
         </Link>
 

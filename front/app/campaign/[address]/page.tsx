@@ -30,6 +30,36 @@ import { useChainId } from "wagmi"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 
+interface CampaignData {
+  title: string
+  description: string
+  goalAmount: bigint
+  totalRaised: bigint
+  creator: string
+  state: number
+  proofURI: string
+  ensSubdomain: string
+  userDonation: bigint
+  hasVoted: boolean
+  votingStatus: [bigint, bigint, bigint, bigint] | null
+  usdcBalance: bigint
+}
+
+function getStateString(state: number): string {
+  switch (state) {
+    case 0:
+      return "Active"
+    case 1:
+      return "Under Review"
+    case 2:
+      return "Completed"
+    case 3:
+      return "Refunded"
+    default:
+      return "Unknown"
+  }
+}
+
 export default function CampaignPage() {
   const params = useParams()
   const address = params.address as string
@@ -38,8 +68,7 @@ export default function CampaignPage() {
   const { switchChain } = useSwitchChain()
   const [donationAmount, setDonationAmount] = useState("")
   const [step, setStep] = useState<"input" | "approve" | "donate">("input")
-  const [isClient, setIsClient] = useState(false)
-  const [fallbackMode, setFallbackMode] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   
   // Network validation
   const isBaseNetwork = chainId === 8453
@@ -47,52 +76,62 @@ export default function CampaignPage() {
   // Validate campaign address
   const isValidAddress = address && address.length === 42 && address.startsWith('0x')
   
-  // Set client state after component mounts
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
-  
-  // Read campaign data with error handling
+  console.log("CampaignPage Debug:", {
+    address,
+    userAddress,
+    isConnected,
+    chainId,
+    isBaseNetwork,
+    isValidAddress
+  })
+
+  // Read campaign data using the same pattern as /causes
   const { data: title, error: titleError, isLoading: isTitleLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "title",
-    query: { enabled: !!isValidAddress && isClient },
   })
 
   const { data: description, error: descriptionError, isLoading: isDescriptionLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "description",
-    query: { enabled: !!isValidAddress && isClient },
   })
 
   const { data: goalAmount, error: goalError, isLoading: isGoalLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "goalAmount",
-    query: { enabled: !!isValidAddress && isClient },
   })
 
   const { data: totalRaised, error: raisedError, isLoading: isRaisedLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "totalRaised",
-    query: { enabled: !!isValidAddress && isClient },
   })
 
   const { data: creator, error: creatorError, isLoading: isCreatorLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "creator",
-    query: { enabled: !!isValidAddress && isClient },
   })
 
-  const { data: campaignState, error: stateError, isLoading: isStateLoading } = useReadContract({
+  const { data: state, error: stateError, isLoading: isStateLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
     functionName: "state",
-    query: { enabled: !!isValidAddress && isClient },
+  })
+
+  const { data: proofURI, error: proofError, isLoading: isProofLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "proofURI",
+  })
+
+  const { data: ensSubdomain, error: ensError, isLoading: isEnsLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "ensSubdomain",
   })
 
   const { data: userDonation, error: donationError, isLoading: isDonationLoading } = useReadContract({
@@ -100,29 +139,6 @@ export default function CampaignPage() {
     abi: CAMPAIGN_ABI,
     functionName: "donations",
     args: userAddress ? [userAddress] : undefined,
-    query: { enabled: !!isValidAddress && !!userAddress && isClient },
-  })
-
-  const { data: usdcBalance, error: balanceError, isLoading: isBalanceLoading } = useReadContract({
-    address: USDC_ADDRESS[chainId as keyof typeof USDC_ADDRESS],
-    abi: USDC_ABI,
-    functionName: "balanceOf",
-    args: userAddress ? [userAddress] : undefined,
-    query: { enabled: !!isValidAddress && !!userAddress && isClient },
-  })
-
-  const { data: proofURI, error: proofError, isLoading: isProofLoading } = useReadContract({
-    address: address as `0x${string}`,
-    abi: CAMPAIGN_ABI,
-    functionName: "proofURI",
-    query: { enabled: !!isValidAddress && isClient },
-  })
-
-  const { data: votingStatus, error: votingError, isLoading: isVotingLoading } = useReadContract({
-    address: address as `0x${string}`,
-    abi: CAMPAIGN_ABI,
-    functionName: "getVotingStatus",
-    query: { enabled: !!isValidAddress && isClient },
   })
 
   const { data: hasVoted, error: hasVotedError, isLoading: isHasVotedLoading } = useReadContract({
@@ -130,10 +146,71 @@ export default function CampaignPage() {
     abi: CAMPAIGN_ABI,
     functionName: "hasVoted",
     args: userAddress ? [userAddress] : undefined,
-    query: { enabled: !!isValidAddress && !!userAddress && isClient },
   })
 
-  // Contract interactions
+  const { data: votingStatus, error: votingError, isLoading: isVotingLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "getVotingStatus",
+  })
+
+  const { data: usdcBalance, error: balanceError, isLoading: isBalanceLoading } = useReadContract({
+    address: USDC_ADDRESS[chainId as keyof typeof USDC_ADDRESS],
+    abi: USDC_ABI,
+    functionName: "balanceOf",
+    args: userAddress ? [userAddress] : undefined,
+  })
+
+  // Check for any errors
+  const hasErrors = titleError || descriptionError || goalError || raisedError || creatorError || stateError || proofError || ensError
+  const isLoading = isTitleLoading || isDescriptionLoading || isGoalLoading || isRaisedLoading || isCreatorLoading || isStateLoading || isProofLoading || isEnsLoading
+
+  console.log("Contract data:", {
+    title,
+    titleError,
+    isTitleLoading,
+    description,
+    descriptionError,
+    isDescriptionLoading,
+    goalAmount,
+    goalError,
+    isGoalLoading,
+    totalRaised,
+    raisedError,
+    isRaisedLoading,
+    creator,
+    creatorError,
+    isCreatorLoading,
+    state,
+    stateError,
+    isStateLoading,
+    proofURI,
+    proofError,
+    isProofLoading,
+    ensSubdomain,
+    ensError,
+    isEnsLoading,
+    userDonation,
+    donationError,
+    isDonationLoading,
+    hasVoted,
+    hasVotedError,
+    isHasVotedLoading,
+    votingStatus,
+    votingError,
+    isVotingLoading,
+    usdcBalance,
+    balanceError,
+    isBalanceLoading
+  })
+
+  console.log("Loading states:", {
+    hasErrors,
+    isLoading,
+    errors: { titleError, descriptionError, goalError, raisedError, creatorError, stateError, proofError, ensError }
+  })
+
+  // Contract interactions - MUST be called before any early returns
   const { writeContract: approveUSDC, data: approveHash, isPending: isApproving } = useWriteContract()
   const { writeContract: donate, data: donateHash, isPending: isDonating } = useWriteContract()
   const { writeContract: vote, data: voteHash, isPending: isVoting } = useWriteContract()
@@ -160,19 +237,9 @@ export default function CampaignPage() {
     hash: refundHash,
   })
 
-  // Check for any errors
-  const hasErrors = titleError || descriptionError || goalError || raisedError || creatorError || stateError
-  const isLoading = isTitleLoading || isDescriptionLoading || isGoalLoading || isRaisedLoading || isCreatorLoading || isStateLoading
-
-  // Enable fallback mode if errors persist after loading
-  useEffect(() => {
-    if (isClient && !isLoading && hasErrors) {
-      setFallbackMode(true)
-    }
-  }, [isClient, isLoading, hasErrors])
-
   // Early return for invalid address
   if (!isValidAddress) {
+    console.log("Invalid address, showing error")
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -195,7 +262,8 @@ export default function CampaignPage() {
   }
 
   // Early return for loading state
-  if (isLoading && !fallbackMode) {
+  if (isLoading) {
+    console.log("Still loading, showing loading state")
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -215,51 +283,9 @@ export default function CampaignPage() {
     )
   }
 
-  // Fallback mode - show basic campaign info even if contract calls fail
-  if (fallbackMode) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Campaign Details</CardTitle>
-                <CardDescription>Campaign Address: {address}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Unable to load campaign data from blockchain. This could be due to:
-                    <ul className="list-disc list-inside mt-2 space-y-1">
-                      <li>Network connectivity issues</li>
-                      <li>Contract not properly deployed</li>
-                      <li>Campaign not initialized</li>
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-                <div className="mt-4 space-y-2">
-                  <Button asChild>
-                    <Link href={`https://basescan.org/address/${address}`} target="_blank">
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      View on BaseScan
-                    </Link>
-                  </Button>
-                  <Button variant="outline" asChild>
-                    <Link href="/causes">Browse Other Causes</Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   // Early return if no campaign data
   if (!title || !description || !goalAmount) {
+    console.log("No campaign data found, showing error")
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -286,6 +312,8 @@ export default function CampaignPage() {
     )
   }
 
+  console.log("Rendering campaign page with data:", { title, description, goalAmount })
+
   // Calculate progress
   const progressPercentage = goalAmount && totalRaised ? Number((totalRaised * BigInt(100)) / goalAmount) : 0
 
@@ -301,22 +329,7 @@ export default function CampaignPage() {
   const timeRemaining = votingStatus ? Number(votingStatus[3]) : 0
 
   // Get campaign status
-  const getStatusInfo = (state: number) => {
-    switch (state) {
-      case 0:
-        return { label: "Active", variant: "default" as const, color: "text-primary" }
-      case 1:
-        return { label: "Under Review", variant: "secondary" as const, color: "text-yellow-600" }
-      case 2:
-        return { label: "Completed", variant: "outline" as const, color: "text-green-600" }
-      case 3:
-        return { label: "Refunded", variant: "destructive" as const, color: "text-red-600" }
-      default:
-        return { label: "Unknown", variant: "outline" as const, color: "text-gray-600" }
-    }
-  }
-
-  const statusInfo = getStatusInfo(Number(campaignState || 0))
+  const statusInfo = getStateString(Number(state || 0))
 
   const handleApprove = async () => {
     if (!donationAmount || !isConnected) return
@@ -437,7 +450,7 @@ export default function CampaignPage() {
 
   const isCreator = creator && userAddress && creator.toLowerCase() === userAddress.toLowerCase()
   const isDonor = Number(userDonation || 0) > 0
-  const canVote = isDonor && Number(campaignState || 0) === 1 && !hasVoted && timeRemaining > 0
+  const canVote = isDonor && Number(state || 0) === 1 && !hasVoted && timeRemaining > 0
 
   const formatTimeRemaining = (seconds: number) => {
     if (seconds <= 0) return "Voting ended"
@@ -482,7 +495,13 @@ export default function CampaignPage() {
           {/* Campaign Header */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
-              <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+              <Badge variant={
+                statusInfo === "Active" ? "default" : 
+                statusInfo === "Under Review" ? "secondary" : 
+                statusInfo === "Completed" ? "outline" : "destructive"
+              }>
+                {statusInfo}
+              </Badge>
               {isCreator && <Badge variant="outline">Your Campaign</Badge>}
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">{title}</h1>
@@ -527,9 +546,9 @@ export default function CampaignPage() {
                 </CardContent>
               </Card>
 
-              {Number(campaignState || 0) >= 1 && proofURI && <ProofViewer proofURI={proofURI as string} />}
+              {Number(state || 0) >= 1 && proofURI && <ProofViewer proofURI={proofURI as string} />}
 
-              {Number(campaignState || 0) === 1 && (
+              {Number(state || 0) === 1 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -634,7 +653,13 @@ export default function CampaignPage() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Status</p>
-                      <p className={`font-medium ${statusInfo.color}`}>{statusInfo.label}</p>
+                      <p className={`font-medium ${
+                        statusInfo === "Active" ? "text-primary" :
+                        statusInfo === "Under Review" ? "text-yellow-600" :
+                        statusInfo === "Completed" ? "text-green-600" : "text-red-600"
+                      }`}>
+                        {statusInfo}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -644,7 +669,7 @@ export default function CampaignPage() {
             {/* Donation Sidebar */}
             <div className="space-y-6">
               {/* Donation Card */}
-              {Number(campaignState || 0) === 0 && (
+              {Number(state || 0) === 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Make a Donation</CardTitle>
@@ -714,7 +739,7 @@ export default function CampaignPage() {
               )}
 
               {/* Creator Fund Claim */}
-              {isCreator && Number(campaignState || 0) === 2 && (
+              {isCreator && Number(state || 0) === 2 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -749,7 +774,7 @@ export default function CampaignPage() {
               )}
 
               {/* Donor Refund */}
-              {isDonor && Number(campaignState || 0) === 3 && Number(userDonation || 0) > 0 && (
+              {isDonor && Number(state || 0) === 3 && Number(userDonation || 0) > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -807,7 +832,7 @@ export default function CampaignPage() {
               )}
 
               {/* Campaign Actions for Creator */}
-              {isCreator && Number(campaignState || 0) === 0 && Number(totalRaised || 0) > 0 && (
+              {isCreator && Number(state || 0) === 0 && Number(totalRaised || 0) > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Campaign Actions</CardTitle>

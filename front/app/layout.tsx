@@ -13,6 +13,11 @@ export const metadata: Metadata = {
   title: "TuCausa - Fundraise for Local Causes",
   description: "Create and fundraise for local causes with USDC on Base",
   generator: "v0.app",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 }
 
 export default function RootLayout({

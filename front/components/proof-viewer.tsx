@@ -91,7 +91,7 @@ export function ProofViewer({ proofURI, className }: ProofViewerProps) {
               {error || "No proof data available"}
               {error?.includes("Mock proof data") && (
                 <div className="mt-2 text-sm">
-                  This is development data and won't be available in production.
+                  This is development data and won&apos;t be available in production.
                 </div>
               )}
             </AlertDescription>

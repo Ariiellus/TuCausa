@@ -4,7 +4,7 @@ export function getSynapseUrl(commp: string): string {
 }
 
 // Mock upload function for development when Synapse is not configured
-async function mockUploadToSynapse(file: File): Promise<string> {
+async function mockUploadToSynapse(_file: File): Promise<string> {
   console.log("Using mock upload for development")
   
   // Simulate upload delay
@@ -41,7 +41,7 @@ export async function uploadToSynapse(file: File): Promise<string> {
       let errorData
       try {
         errorData = await response.json()
-      } catch (e) {
+      } catch (_e) {
         errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
       }
       
@@ -77,7 +77,7 @@ export async function uploadToSynapse(file: File): Promise<string> {
   }
 }
 
-export async function uploadJSONToSynapse(data: any, filename = "data.json"): Promise<string> {
+export async function uploadJSONToSynapse(data: unknown, filename = "data.json"): Promise<string> {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
   const file = new File([blob], filename, { type: "application/json" })
   return await uploadToSynapse(file)

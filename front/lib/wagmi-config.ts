@@ -2,6 +2,10 @@ import { createConfig, http } from "wagmi"
 import { base, mainnet } from "wagmi/chains"
 import { coinbaseWallet, walletConnect } from "wagmi/connectors"
 
+// Use public RPC endpoints for better localhost development
+const BASE_RPC_URL = process.env.NEXT_PUBLIC_BASE_RPC_URL || "https://mainnet.base.org"
+const MAINNET_RPC_URL = process.env.NEXT_PUBLIC_MAINNET_RPC_URL || "https://eth.llamarpc.com"
+
 export const config = createConfig({
   chains: [base, mainnet],
   connectors: [
@@ -23,7 +27,7 @@ export const config = createConfig({
     ] : []),
   ],
   transports: {
-    [base.id]: http(),
-    [mainnet.id]: http(),
+    [base.id]: http(BASE_RPC_URL),
+    [mainnet.id]: http(MAINNET_RPC_URL),
   },
 })
