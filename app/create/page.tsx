@@ -23,10 +23,12 @@ export default function CreateCausePage() {
   const chainId = useChainId()
   const [formData, setFormData] = useState({
     title: "",
+    campaignTag: "",
     description: "",
     goalAmount: "",
   })
   const [ensSubdomain, setEnsSubdomain] = useState("")
+  const [tagError, setTagError] = useState("")
   const [createdCampaignAddress, setCreatedCampaignAddress] = useState("")
 
   const { writeContract, data: hash, isPending, error } = useWriteContract()
@@ -38,9 +40,16 @@ export default function CreateCausePage() {
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
 
-    // Generate ENS subdomain when title changes
-    if (field === "title" && value) {
-      setEnsSubdomain(generateEnsSubdomain(value))
+    // Generate ENS subdomain when campaign tag changes
+    if (field === "campaignTag" && value) {
+      try {
+        const subdomain = generateEnsSubdomain(value)
+        setEnsSubdomain(subdomain)
+        setTagError("")
+      } catch (err) {
+        setTagError(err instanceof Error ? err.message : "Invalid project name")
+        setEnsSubdomain("")
+      }
     }
   }
 
@@ -52,8 +61,13 @@ export default function CreateCausePage() {
       return
     }
 
-    if (!formData.title || !formData.description || !formData.goalAmount) {
+    if (!formData.title || !formData.campaignTag || !formData.description || !formData.goalAmount) {
       alert("Please fill in all fields")
+      return
+    }
+
+    if (tagError || !ensSubdomain) {
+      alert("Please fix the project name errors")
       return
     }
 
@@ -158,9 +172,22 @@ export default function CreateCausePage() {
                     onChange={(e) => handleInputChange("title", e.target.value)}
                     required
                   />
-                  {ensSubdomain && (
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="campaignTag">Project Name</Label>
+                  <Input
+                    id="campaignTag"
+                    placeholder="e.g., potholes-fix, community-garden (8-20 characters)"
+                    value={formData.campaignTag}
+                    onChange={(e) => handleInputChange("campaignTag", e.target.value)}
+                    required
+                    className={tagError ? "border-red-500" : ""}
+                  />
+                  {tagError && <p className="text-sm text-red-500">{tagError}</p>}
+                  {ensSubdomain && !tagError && (
                     <p className="text-sm text-muted-foreground">
-                      ENS Domain: <span className="font-mono">{ensSubdomain}.tucausa.eth</span>
+                      Cause ID: <span className="font-mono">{ensSubdomain}.tucausa.eth</span>
                     </p>
                   )}
                 </div>
@@ -178,11 +205,11 @@ export default function CreateCausePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="goalAmount">Goal Amount (USDC)</Label>
+                  <Label htmlFor="goalAmount">Goal Amount</Label>
                   <Input
                     id="goalAmount"
                     type="number"
-                    placeholder="5000"
+                    placeholder="Insert amount in USD"
                     value={formData.goalAmount}
                     onChange={(e) => handleInputChange("goalAmount", e.target.value)}
                     min="1"

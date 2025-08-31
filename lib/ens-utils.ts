@@ -1,14 +1,21 @@
 // ENS subdomain utilities
-export function generateEnsSubdomain(title: string): string {
-  // Convert title to a valid ENS subdomain
-  const subdomain = title
+export function generateEnsSubdomain(campaignTag: string): string {
+  // Validate and clean the campaign tag
+  const cleanedTag = campaignTag
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, "")
-    .substring(0, 20) // Limit length
-
-  // Add random suffix to ensure uniqueness
-  const randomSuffix = Math.random().toString(36).substring(2, 8)
-  return `${subdomain}${randomSuffix}`
+    .replace(/[^a-z0-9-]/g, "") // Only allow letters, numbers, and hyphens
+    .replace(/^-+|-+$/g, "") // Remove leading/trailing hyphens
+  
+  // Ensure it meets length requirements
+  if (cleanedTag.length < 8) {
+    throw new Error("Project name must be at least 8 characters long")
+  }
+  
+  if (cleanedTag.length > 20) {
+    throw new Error("Project name must be no more than 20 characters long")
+  }
+  
+  return cleanedTag
 }
 
 export function getEnsUrl(subdomain: string): string {
