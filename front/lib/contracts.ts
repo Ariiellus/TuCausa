@@ -12,6 +12,11 @@ export const USDC_ADDRESS = {
 // Campaign Factory ABI
 export const CAMPAIGN_FACTORY_ABI = [
   {
+    inputs: [{ name: "_usdcToken", type: "address" }],
+    stateMutability: "nonpayable",
+    type: "constructor",
+  },
+  {
     inputs: [
       { name: "_title", type: "string" },
       { name: "_description", type: "string" },
@@ -51,10 +56,33 @@ export const CAMPAIGN_FACTORY_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "campaignAddress", type: "address" },
+      { indexed: true, name: "creator", type: "address" },
+      { indexed: false, name: "title", type: "string" },
+      { indexed: false, name: "ensSubdomain", type: "string" },
+    ],
+    name: "CampaignCreated",
+    type: "event",
+  },
 ] as const
 
 // Campaign ABI
 export const CAMPAIGN_ABI = [
+  {
+    inputs: [
+      { name: "_title", type: "string" },
+      { name: "_description", type: "string" },
+      { name: "_goalAmount", type: "uint256" },
+      { name: "_creator", type: "address" },
+      { name: "_usdcToken", type: "address" },
+      { name: "_ensSubdomain", type: "string" },
+    ],
+    stateMutability: "nonpayable",
+    type: "constructor",
+  },
   {
     inputs: [],
     name: "title",
@@ -92,15 +120,8 @@ export const CAMPAIGN_ABI = [
   },
   {
     inputs: [],
-    name: "state",
-    outputs: [{ name: "", type: "uint8" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "proofURI",
-    outputs: [{ name: "", type: "string" }],
+    name: "usdcToken",
+    outputs: [{ name: "", type: "address" }],
     stateMutability: "view",
     type: "function",
   },
@@ -113,34 +134,15 @@ export const CAMPAIGN_ABI = [
   },
   {
     inputs: [],
-    name: "VOTING_PERIOD",
-    outputs: [{ name: "", type: "uint256" }],
+    name: "proofURI",
+    outputs: [{ name: "", type: "string" }],
     stateMutability: "view",
     type: "function",
   },
   {
     inputs: [],
-    name: "VOTING_THRESHOLD",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "getVotingStatus",
-    outputs: [
-      { name: "_votesForSolved", type: "uint256" },
-      { name: "_votesForNotSolved", type: "uint256" },
-      { name: "_totalDonors", type: "uint256" },
-      { name: "_timeRemaining", type: "uint256" },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ name: "", type: "address" }],
-    name: "hasVoted",
-    outputs: [{ name: "", type: "bool" }],
+    name: "state",
+    outputs: [{ name: "", type: "uint8" }],
     stateMutability: "view",
     type: "function",
   },
@@ -152,16 +154,16 @@ export const CAMPAIGN_ABI = [
     type: "function",
   },
   {
-    inputs: [{ name: "", type: "uint256" }],
-    name: "donors",
-    outputs: [{ name: "", type: "address" }],
+    inputs: [{ name: "", type: "address" }],
+    name: "hasVoted",
+    outputs: [{ name: "", type: "bool" }],
     stateMutability: "view",
     type: "function",
   },
   {
-    inputs: [],
-    name: "getDonorCount",
-    outputs: [{ name: "", type: "uint256" }],
+    inputs: [{ name: "", type: "uint256" }],
+    name: "donors",
+    outputs: [{ name: "", type: "address" }],
     stateMutability: "view",
     type: "function",
   },
@@ -175,6 +177,20 @@ export const CAMPAIGN_ABI = [
   {
     inputs: [],
     name: "votesForNotSolved",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "VOTING_THRESHOLD",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "VOTING_PERIOD",
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
@@ -220,6 +236,69 @@ export const CAMPAIGN_ABI = [
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
+  },
+  {
+    inputs: [],
+    name: "getDonorCount",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getVotingStatus",
+    outputs: [
+      { name: "_votesForSolved", type: "uint256" },
+      { name: "_votesForNotSolved", type: "uint256" },
+      { name: "_totalDonors", type: "uint256" },
+      { name: "_timeRemaining", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "donor", type: "address" },
+      { indexed: false, name: "amount", type: "uint256" },
+    ],
+    name: "DonationReceived",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: false, name: "proofURI", type: "string" },
+    ],
+    name: "ProofSubmitted",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "voter", type: "address" },
+      { indexed: false, name: "solved", type: "bool" },
+    ],
+    name: "VoteCast",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "creator", type: "address" },
+      { indexed: false, name: "amount", type: "uint256" },
+    ],
+    name: "FundsReleased",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "donor", type: "address" },
+      { indexed: false, name: "amount", type: "uint256" },
+    ],
+    name: "RefundClaimed",
+    type: "event",
   },
 ] as const
 
