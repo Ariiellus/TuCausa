@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, use } from "react"
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi"
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useChainId, useSwitchChain } from "wagmi"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,6 +26,11 @@ export default function SubmitProofPage({ params }: SubmitProofPageProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [uploadedProofURI, setUploadedProofURI] = useState("")
+  
+  // Network validation
+  const chainId = useChainId()
+  const { switchChain } = useSwitchChain()
+  const isBaseNetwork = chainId === 8453
 
   // Read campaign data
   const { data: title } = useReadContract({
@@ -113,6 +118,11 @@ export default function SubmitProofPage({ params }: SubmitProofPageProps) {
   const handleSubmitProof = async () => {
     if (!uploadedProofURI) {
       alert("Please upload proof files first")
+      return
+    }
+    
+    if (!isBaseNetwork) {
+      alert("Please switch to Base network to submit proof.")
       return
     }
 
@@ -214,6 +224,29 @@ export default function SubmitProofPage({ params }: SubmitProofPageProps) {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+
+      {/* Network Warning */}
+      {isConnected && !isBaseNetwork && (
+        <Alert className="mx-4 mt-4 mb-0 border-red-500 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <strong>⚠️ Wrong Network Detected!</strong> You are currently on {chainId === 1 ? "Ethereum Mainnet" : `Chain ${chainId}`}. 
+                TuCausa only works on Base network.
+              </div>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => switchChain({ chainId: 8453 })}
+                className="bg-red-600 hover:bg-red-700 ml-4"
+              >
+                Switch to Base
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">

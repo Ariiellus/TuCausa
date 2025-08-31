@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, use } from "react"
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi"
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from "wagmi"
 import { parseUnits, formatUnits } from "viem"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
@@ -37,9 +37,16 @@ export default function CampaignPage({ params }: CampaignPageProps) {
   const { address } = use(params)
   const { address: userAddress, isConnected } = useAccount()
   const chainId = useChainId()
+  const { switchChain } = useSwitchChain()
   const [donationAmount, setDonationAmount] = useState("")
   const [step, setStep] = useState<"input" | "approve" | "donate">("input")
+  
+  // Network validation
+  const isBaseNetwork = chainId === 8453
 
+
+
+  
   // Read campaign data
   const { data: title } = useReadContract({
     address: address as `0x${string}`,
@@ -172,6 +179,11 @@ export default function CampaignPage({ params }: CampaignPageProps) {
 
   const handleApprove = async () => {
     if (!donationAmount || !isConnected) return
+    
+    if (!isBaseNetwork) {
+      alert("Please switch to Base network to donate to this campaign.")
+      return
+    }
 
     const amountWei = parseUnits(donationAmount, 6)
 
@@ -190,6 +202,11 @@ export default function CampaignPage({ params }: CampaignPageProps) {
 
   const handleDonate = async () => {
     if (!donationAmount || !isConnected) return
+    
+    if (!isBaseNetwork) {
+      alert("Please switch to Base network to donate to this campaign.")
+      return
+    }
 
     const amountWei = parseUnits(donationAmount, 6)
 
@@ -208,6 +225,11 @@ export default function CampaignPage({ params }: CampaignPageProps) {
 
   const handleVote = async (solved: boolean) => {
     if (!isConnected) return
+    
+    if (!isBaseNetwork) {
+      alert("Please switch to Base network to vote on this campaign.")
+      return
+    }
 
     try {
       vote({
@@ -223,6 +245,11 @@ export default function CampaignPage({ params }: CampaignPageProps) {
 
   const handleClaimFunds = async () => {
     if (!isConnected) return
+    
+    if (!isBaseNetwork) {
+      alert("Please switch to Base network to claim funds from this campaign.")
+      return
+    }
 
     try {
       claimFunds({
@@ -238,6 +265,11 @@ export default function CampaignPage({ params }: CampaignPageProps) {
 
   const handleClaimRefund = async () => {
     if (!isConnected) return
+    
+    if (!isBaseNetwork) {
+      alert("Please switch to Base network to claim refund from this campaign.")
+      return
+    }
 
     try {
       claimRefund({
@@ -280,6 +312,29 @@ export default function CampaignPage({ params }: CampaignPageProps) {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+
+      {/* Network Warning */}
+      {isConnected && !isBaseNetwork && (
+        <Alert className="mx-4 mt-4 mb-0 border-red-500 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <strong>⚠️ Wrong Network Detected!</strong> You are currently on {chainId === 1 ? "Ethereum Mainnet" : `Chain ${chainId}`}. 
+                TuCausa only works on Base network.
+              </div>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => switchChain({ chainId: 8453 })}
+                className="bg-red-600 hover:bg-red-700 ml-4"
+              >
+                Switch to Base
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">

@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useConnect } from "wagmi"
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useConnect, useSwitchChain } from "wagmi"
 import { parseUnits } from "viem"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
@@ -24,8 +24,12 @@ export default function CreateCausePage() {
   const { address, isConnected } = useAccount()
   const { connect, connectors } = useConnect()
   const chainId = useChainId()
+  const { switchChain } = useSwitchChain()
   const router = useRouter()
   const t = useI18n()
+  
+  // Network validation
+  const isBaseNetwork = chainId === 8453
   const [formData, setFormData] = useState({
     title: "",
     campaignTag: "",
@@ -94,6 +98,11 @@ export default function CreateCausePage() {
 
     if (!isConnected || !address) {
       alert("Please connect your wallet first")
+      return
+    }
+    
+    if (!isBaseNetwork) {
+      alert("Please switch to Base network to create a campaign.")
       return
     }
 
@@ -180,6 +189,29 @@ export default function CreateCausePage() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+
+      {/* Network Warning */}
+      {isConnected && !isBaseNetwork && (
+        <Alert className="mx-4 mt-4 mb-0 border-red-500 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <strong>⚠️ Wrong Network Detected!</strong> You are currently on {chainId === 1 ? "Ethereum Mainnet" : `Chain ${chainId}`}. 
+                TuCausa only works on Base network.
+              </div>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => switchChain({ chainId: 8453 })}
+                className="bg-red-600 hover:bg-red-700 ml-4"
+              >
+                Switch to Base
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">

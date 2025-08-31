@@ -13,6 +13,12 @@ export const config = createConfig({
     ...(process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ? [
       walletConnect({
         projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+        metadata: {
+          name: "TuCausa",
+          description: "Fundraise for Local Causes on Base",
+          url: "https://tucausa.eth",
+          icons: ["https://tucausa.eth/logo.png"],
+        },
       })
     ] : []),
   ],

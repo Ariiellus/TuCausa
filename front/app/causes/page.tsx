@@ -104,7 +104,7 @@ async function fetchCampaigns() {
               creator: creator as string,
               state: getStateString(state as number),
               ensSubdomain: ensSubdomain as string,
-              chainId: 11155111,
+              chainId: 8453,
             }
           } catch (error) {
             console.error(`Error fetching campaign ${campaignAddress}:`, error)
@@ -183,7 +183,7 @@ export default async function CausesPage() {
                       {cause.state}
                     </Badge>
                     <Badge variant="outline" className="text-xs">
-                      Sepolia
+                      Base
                     </Badge>
                   </div>
                   <CardTitle className="text-lg">{cause.title}</CardTitle>

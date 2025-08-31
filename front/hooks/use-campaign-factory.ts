@@ -34,14 +34,35 @@ export function useCampaignFactory() {
   const { writeContract: createCampaign, isPending: isCreating } = useWriteContract()
 
   const createNewCampaign = (title: string, description: string, goalAmount: bigint, ensSubdomain: string) => {
-    if (!factoryAddress || !isBaseNetwork) return
+    console.log("Creating campaign with:", { title, description, goalAmount: goalAmount.toString(), ensSubdomain })
+    console.log("Factory address:", factoryAddress)
+    console.log("Is Base network:", isBaseNetwork)
+    console.log("Current chain ID:", chainId)
+    
+    if (!factoryAddress) {
+      console.error("No factory address found for chain ID:", chainId)
+      alert("No factory address found. Please check your network connection.")
+      return
+    }
+    
+    if (!isBaseNetwork) {
+      console.error("Not on Base network. Current chain ID:", chainId)
+      alert("Please switch to Base network to create campaigns.")
+      return
+    }
 
-    createCampaign({
-      address: factoryAddress,
-      abi: CAMPAIGN_FACTORY_ABI,
-      functionName: "createCampaign",
-      args: [title, description, goalAmount, ensSubdomain],
-    })
+    try {
+      createCampaign({
+        address: factoryAddress,
+        abi: CAMPAIGN_FACTORY_ABI,
+        functionName: "createCampaign",
+        args: [title, description, goalAmount, ensSubdomain],
+        chainId: 8453, // Explicitly specify Base network
+      })
+    } catch (error) {
+      console.error("Error creating campaign:", error)
+      alert("Error creating campaign. Please check the console for details.")
+    }
   }
 
   return {
