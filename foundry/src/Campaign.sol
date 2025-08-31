@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.29;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";  
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract Campaign is ReentrancyGuard {
     enum CampaignState { Active, UnderReview, Completed, Refunded }
@@ -24,7 +24,7 @@ contract Campaign is ReentrancyGuard {
     uint256 public votesForNotSolved;
     
     uint256 public constant VOTING_THRESHOLD = 60; // 60% approval needed
-    uint256 public constant VOTING_PERIOD = 7 days;
+    uint256 public constant VOTING_PERIOD = 5 minutes; // for testing
     uint256 public votingStartTime;
     
     event DonationReceived(address indexed donor, uint256 amount);

@@ -18,9 +18,28 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const handleConnect = () => {
-    const coinbaseConnector = connectors.find((connector) => connector.name === "Coinbase Wallet")
+    console.log("Available connectors:", connectors.map(c => c.name))
+    
+    // Try Coinbase Wallet first
+    const coinbaseConnector = connectors.find((connector) => 
+      connector.name === "Coinbase Wallet" || 
+      connector.name === "Coinbase Wallet (SDK)" ||
+      connector.name.toLowerCase().includes("coinbase")
+    )
+    
     if (coinbaseConnector) {
+      console.log("Connecting with:", coinbaseConnector.name)
       connect({ connector: coinbaseConnector })
+    } else {
+      // Fallback to first available connector
+      const firstConnector = connectors[0]
+      if (firstConnector) {
+        console.log("Connecting with fallback:", firstConnector.name)
+        connect({ connector: firstConnector })
+      } else {
+        console.error("No connectors available")
+        alert("No wallet connectors available. Please install Coinbase Wallet or WalletConnect.")
+      }
     }
   }
 

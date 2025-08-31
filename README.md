@@ -1,30 +1,66 @@
-# TuCausa MiniApp on Base
+# TuCausa - Fundraise for Local Causes
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+A decentralized platform for creating and funding local causes using USDC on Base blockchain.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/ariiellus-projects/v0-tu-causa-mini-app-on-base)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/k1QoOF8IXyq)
+## Project Structure
 
-## Overview
+This is a monorepo containing:
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+- **`front/`** - Next.js frontend application
+- **`foundry/`** - Smart contracts and deployment scripts
 
-## Deployment
+## Quick Start
 
-Your project is live at:
+### Frontend Development
 
-**[https://vercel.com/ariiellus-projects/v0-tu-causa-mini-app-on-base](https://vercel.com/ariiellus-projects/v0-tu-causa-mini-app-on-base)**
+```bash
+# Install dependencies
+npm install
 
-## Build your app
+# Start development server
+npm run dev
 
-Continue building your app on:
+# Build for production
+npm run build
+```
 
-**[https://v0.app/chat/projects/k1QoOF8IXyq](https://v0.app/chat/projects/k1QoOF8IXyq)**
+### Smart Contract Development
 
-## How It Works
+```bash
+# Navigate to foundry directory
+cd foundry
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+# Install dependencies
+forge install
+
+# Build contracts
+forge build
+
+# Run tests
+forge test
+
+# Deploy contracts
+forge script Deploy --rpc-url $RPC_URL --broadcast --verify
+```
+
+## Environment Setup
+
+1. Copy `.env.example` to `.env.local` in the `front/` directory
+2. Add your environment variables:
+   - `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`
+   - `NEXT_PUBLIC_REOWN_PROJECT_ID` (if using Reown)
+
+## Features
+
+- 🌐 **Internationalization** - English and Spanish support
+- 🔐 **Wallet Integration** - Coinbase Wallet and WalletConnect
+- 📱 **Mobile Optimized** - Responsive design
+- 🌐 **ENS Integration** - Display ENS names and avatars
+- 🔒 **Smart Contracts** - Transparent fundraising on Base
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS
+- **Blockchain**: Foundry, Solidity, Base Network
+- **Wallet**: Wagmi, Coinbase Wallet, WalletConnect
+- **Internationalization**: next-international
