@@ -44,6 +44,21 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_CHAIN_ID: '8453',
   },
+
+  // Force client-side rendering for dynamic routes
+  async headers() {
+    return [
+      {
+        source: '/campaign/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, must-revalidate',
+          },
+        ],
+      },
+    ]
+  },
 }
 
 export default nextConfig

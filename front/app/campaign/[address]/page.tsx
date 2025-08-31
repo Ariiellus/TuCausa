@@ -29,9 +29,8 @@ import { CAMPAIGN_ABI, USDC_ADDRESS, USDC_ABI } from "@/lib/contracts"
 import { useChainId } from "wagmi"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ErrorBoundary } from "@/components/error-boundary"
 
-function CampaignPageContent() {
+export default function CampaignPage() {
   const params = useParams()
   const address = params.address as string
   const { address: userAddress, isConnected } = useAccount()
@@ -40,6 +39,7 @@ function CampaignPageContent() {
   const [donationAmount, setDonationAmount] = useState("")
   const [step, setStep] = useState<"input" | "approve" | "donate">("input")
   const [isClient, setIsClient] = useState(false)
+  const [fallbackMode, setFallbackMode] = useState(false)
   
   // Network validation
   const isBaseNetwork = chainId === 8453
@@ -47,7 +47,12 @@ function CampaignPageContent() {
   // Validate campaign address
   const isValidAddress = address && address.length === 42 && address.startsWith('0x')
   
-  // Read campaign data with error handling - always call hooks
+  // Set client state after component mounts
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+  
+  // Read campaign data with error handling
   const { data: title, error: titleError, isLoading: isTitleLoading } = useReadContract({
     address: address as `0x${string}`,
     abi: CAMPAIGN_ABI,
@@ -131,7 +136,6 @@ function CampaignPageContent() {
   // Contract interactions
   const { writeContract: approveUSDC, data: approveHash, isPending: isApproving } = useWriteContract()
   const { writeContract: donate, data: donateHash, isPending: isDonating } = useWriteContract()
-
   const { writeContract: vote, data: voteHash, isPending: isVoting } = useWriteContract()
   const { writeContract: claimFunds, data: claimHash, isPending: isClaiming } = useWriteContract()
   const { writeContract: claimRefund, data: refundHash, isPending: isRefunding } = useWriteContract()
@@ -156,28 +160,132 @@ function CampaignPageContent() {
     hash: refundHash,
   })
 
-  // Ensure we're on the client side
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
+  // Check for any errors
+  const hasErrors = titleError || descriptionError || goalError || raisedError || creatorError || stateError
+  const isLoading = isTitleLoading || isDescriptionLoading || isGoalLoading || isRaisedLoading || isCreatorLoading || isStateLoading
 
-  // Don't render anything until we're on the client
-  if (!isClient) {
+  // Enable fallback mode if errors persist after loading
+  useEffect(() => {
+    if (isClient && !isLoading && hasErrors) {
+      setFallbackMode(true)
+    }
+  }, [isClient, isLoading, hasErrors])
+
+  // Early return for invalid address
+  if (!isValidAddress) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-center items-center py-12">
-            <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading...</p>
-            </div>
+          <div className="max-w-2xl mx-auto">
+            <Card>
+              <CardContent className="py-8">
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Invalid campaign address format. Please check the URL and try again.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
     )
   }
-  
+
+  // Early return for loading state
+  if (isLoading && !fallbackMode) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <Card>
+              <CardContent className="py-8">
+                <div className="flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  <span>Loading campaign data...</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Fallback mode - show basic campaign info even if contract calls fail
+  if (fallbackMode) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Campaign Details</CardTitle>
+                <CardDescription>Campaign Address: {address}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Unable to load campaign data from blockchain. This could be due to:
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Network connectivity issues</li>
+                      <li>Contract not properly deployed</li>
+                      <li>Campaign not initialized</li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+                <div className="mt-4 space-y-2">
+                  <Button asChild>
+                    <Link href={`https://basescan.org/address/${address}`} target="_blank">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      View on BaseScan
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href="/causes">Browse Other Causes</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Early return if no campaign data
+  if (!title || !description || !goalAmount) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <Card>
+              <CardContent className="py-8">
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Campaign data not found. This campaign may not exist or may have been removed.
+                  </AlertDescription>
+                </Alert>
+                <div className="mt-4">
+                  <Button asChild>
+                    <Link href="/causes">Browse Other Causes</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Calculate progress
   const progressPercentage = goalAmount && totalRaised ? Number((totalRaised * BigInt(100)) / goalAmount) : 0
 
@@ -342,75 +450,6 @@ function CampaignPageContent() {
     return `${minutes}m remaining`
   }
 
-  // Check loading state
-  const isLoading = isTitleLoading || isDescriptionLoading || isGoalLoading || isRaisedLoading || 
-                   isCreatorLoading || isStateLoading || isDonationLoading || isBalanceLoading ||
-                   isProofLoading || isVotingLoading || isHasVotedLoading
-
-  // Check for errors
-  const hasErrors = titleError || descriptionError || goalError || raisedError || creatorError || 
-                   stateError || donationError || balanceError || proofError || votingError || hasVotedError
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-center items-center py-12">
-            <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading campaign data...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Check if campaign address is invalid
-  if (!isValidAddress) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Invalid campaign address: {address}
-              </AlertDescription>
-            </Alert>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Check if campaign doesn't exist or has errors
-  if (hasErrors) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Campaign not found or error loading campaign data. Please check the address and try again.
-              </AlertDescription>
-            </Alert>
-            <div className="mt-4">
-              <Button asChild variant="outline">
-                <Link href="/causes">Browse All Campaigns</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -446,8 +485,8 @@ function CampaignPageContent() {
               <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
               {isCreator && <Badge variant="outline">Your Campaign</Badge>}
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">{title || "Loading..."}</h1>
-            <p className="text-muted-foreground">{description || "Loading description..."}</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">{title}</h1>
+            <p className="text-muted-foreground">{description}</p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
@@ -807,13 +846,5 @@ function CampaignPageContent() {
         </div>
       </div>
     </div>
-  )
-}
-
-export default function CampaignPage() {
-  return (
-    <ErrorBoundary>
-      <CampaignPageContent />
-    </ErrorBoundary>
   )
 }

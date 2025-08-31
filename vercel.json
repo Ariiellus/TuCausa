@@ -5,12 +5,26 @@
   "functions": {
     "app/campaign/[address]/page.tsx": {
       "maxDuration": 30
+    },
+    "app/campaign/[address]/submit-proof/page.tsx": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
     {
       "source": "/campaign/:address*",
       "destination": "/campaign/[address]"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/campaign/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
+      ]
     }
   ]
 }
