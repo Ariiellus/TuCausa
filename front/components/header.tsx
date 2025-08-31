@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from "wagmi"
-import { Heart, Wallet, Menu, X } from "lucide-react"
+import { Wallet, Menu, X } from "lucide-react"
 import Link from "next/link"
 import { useI18n } from "@/lib/i18n"
 import { LanguageToggle } from "@/components/language-toggle"
@@ -12,7 +12,7 @@ import { TuCausaLogoCompact } from "@/components/tucausa-logo"
 import { useState } from "react"
 
 function WalletSection() {
-  const { address, isConnected } = useAccount()
+  const { isConnected } = useAccount()
   const { connect, connectors } = useConnect()
   const { disconnect } = useDisconnect()
   const chainId = useChainId()
@@ -76,7 +76,7 @@ function WalletSection() {
 }
 
 function MobileWalletSection() {
-  const { address, isConnected } = useAccount()
+  const { isConnected } = useAccount()
   const { connect, connectors } = useConnect()
   const { disconnect } = useDisconnect()
   const chainId = useChainId()

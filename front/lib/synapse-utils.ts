@@ -4,7 +4,7 @@ export function getSynapseUrl(commp: string): string {
 }
 
 // Mock upload function for development when Synapse is not configured
-async function mockUploadToSynapse(_file: File): Promise<string> {
+async function mockUploadToSynapse(): Promise<string> {
   console.log("Using mock upload for development")
   
   // Simulate upload delay
@@ -41,7 +41,7 @@ export async function uploadToSynapse(file: File): Promise<string> {
       let errorData
       try {
         errorData = await response.json()
-      } catch (_e) {
+      } catch {
         errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
       }
       
@@ -55,7 +55,7 @@ export async function uploadToSynapse(file: File): Promise<string> {
       // If Synapse is not configured, use mock upload for development
       if (errorData.error?.includes("Private key not configured")) {
         console.warn("Synapse not configured, using mock upload for development")
-        return await mockUploadToSynapse(file)
+        return await mockUploadToSynapse()
       }
       
       throw new Error(`Failed to upload file to Synapse: ${errorData.error || errorData.details || 'Unknown error'}`)
@@ -70,7 +70,7 @@ export async function uploadToSynapse(file: File): Promise<string> {
     // For development, fall back to mock upload
     if (process.env.NODE_ENV === 'development') {
       console.warn("Network error, using mock upload for development")
-      return await mockUploadToSynapse(file)
+      return await mockUploadToSynapse()
     }
     
     throw error

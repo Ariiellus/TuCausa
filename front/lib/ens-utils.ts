@@ -27,7 +27,7 @@ export function getCampaignUrl(campaignAddress: string): string {
 }
 
 // ENS resolution utilities
-export async function resolveEnsName(_address: string): Promise<string | null> {
+export async function resolveEnsName(): Promise<string | null> {
   try {
     // Try Base network first
     // const baseResponse = await fetch(`https://api.basescan.org/api?module=proxy&action=eth_call&data=0x3d3d8c8b&to=0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e&apikey=YourApiKeyToken`)

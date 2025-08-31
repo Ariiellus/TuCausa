@@ -6,6 +6,15 @@
 [![Frontend](https://img.shields.io/badge/Frontend-Next.js%2015-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![Smart Contracts](https://img.shields.io/badge/Smart%20Contracts-Foundry-orange?style=for-the-badge&logo=solidity)](https://getfoundry.sh/)
 
+## 🏆 BUIDL Submission
+
+This project is submitted for the following bounties:
+
+- **🏗️ Base**: Leveraging Base's L2 infrastructure for low-cost, fast transactions
+- **🌐 Filecoin**: Using Synapse SDK for decentralized file storage and proof verification
+- **⚡ Vercel**: Frontend created and deployed on Vercel with Next.js 15 for optimal performance
+- **🔗 ENS**: Integrated ENS for community identity and subdomain management
+
 ---
 
 ## 🎯 The Problem
@@ -55,20 +64,32 @@ TuCausa is a **decentralized fundraising platform** that empowers communities to
 
 ## 🏗️ Architecture
 
-### Smart Contracts
-```
-CampaignFactory (0xe46c683691aD993133CdE2A0cc19cCae724fE93d)
-├── Creates Campaign contracts
-├── Tracks all campaigns
-└── Manages USDC integration
+### Smart Contract Architecture
 
-Campaign (Individual contracts)
-├── Stores campaign data
-├── Handles donations
-├── Manages voting system
-├── Controls fund distribution
-└── Processes refunds
-```
+TuCausa uses a **Factory Pattern** where each campaign is a separate smart contract:
+
+#### Main Contract: CampaignFactory
+**Address**: [`0xe46c683691aD993133CdE2A0cc19cCae724fE93d`](https://basescan.org/address/0xe46c683691aD993133CdE2A0cc19cCae724fE93d)
+
+The CampaignFactory is the **master contract** that:
+- ✅ **Creates new Campaign contracts** for each fundraising cause
+- ✅ **Tracks all campaigns** in a centralized registry
+- ✅ **Manages USDC integration** across all campaigns
+- ✅ **Provides campaign discovery** through `getAllCampaigns()` function
+
+#### Individual Campaign Contracts
+Each campaign gets its own smart contract that:
+- ✅ **Stores campaign data** (title, description, goal, creator)
+- ✅ **Handles donations** with USDC integration
+- ✅ **Manages voting system** for proof verification
+- ✅ **Controls fund distribution** based on community votes
+- ✅ **Processes refunds** if campaign fails verification
+
+### Factory Pattern Benefits:
+- **🔒 Security**: Each campaign is isolated
+- **📈 Scalability**: Unlimited campaigns without gas limits
+- **🔄 Upgradability**: Factory can be upgraded without affecting existing campaigns
+- **💰 Cost Efficiency**: Only pay gas for active campaigns
 
 ### Frontend Architecture
 ```
@@ -82,10 +103,12 @@ Next.js 15 App Router
 
 ### Tech Stack
 - **Frontend**: Next.js 15, React 18, TypeScript, Tailwind CSS
+- **Platform**: Vercel (Frontend hosting and development)
 - **Blockchain**: Foundry, Solidity 0.8.29, Base Network
 - **Web3**: Wagmi, Viem, Coinbase Wallet, WalletConnect
 - **Deployment**: Vercel (Frontend), BaseScan (Contracts)
 - **Internationalization**: next-international
+- **File Storage**: Synapse SDK (Filecoin integration)
 
 ---
 
@@ -155,6 +178,9 @@ BASESCAN_API_KEY=your_basescan_api_key
 ### Base Mainnet
 - **CampaignFactory**: [`0xe46c683691aD993133CdE2A0cc19cCae724fE93d`](https://basescan.org/address/0xe46c683691aD993133CdE2A0cc19cCae724fE93d)
 - **USDC**: [`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`](https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
+
+### Contract Verification
+All contracts are verified on [BaseScan](https://basescan.org/address/0xe46c683691aD993133CdE2A0cc19cCae724fE93d) with full source code and ABI available.
 
 ---
 
@@ -282,10 +308,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Base team for the excellent L2 infrastructure
-- Coinbase for wallet integration
-- OpenZeppelin for secure smart contract libraries
-- Next.js team for the amazing framework
+- **Base team** for the excellent L2 infrastructure
+- **Coinbase** for wallet integration
+- **OpenZeppelin** for secure smart contract libraries
+- **Next.js team** for the amazing framework
+- **Filecoin** for decentralized storage solutions
+- **ENS** for decentralized naming system
 
 ---
 
