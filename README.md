@@ -6,6 +6,10 @@
 [![Frontend](https://img.shields.io/badge/Frontend-Next.js%2015-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![Smart Contracts](https://img.shields.io/badge/Smart%20Contracts-Foundry-orange?style=for-the-badge&logo=solidity)](https://getfoundry.sh/)
 
+Check this mini app directly on Farcaster [here](https://farcaster.xyz/miniapps/Waq0x2zawiys/tucausa)!
+
+or just visit our [website](https://tu-causa.vercel.app/)
+
 ## 🏆 BUIDL Submission
 
 This project is submitted for the following bounties:

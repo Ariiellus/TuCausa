@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Separator } from "@/components/ui/separator"
 import { ProofViewer } from "@/components/proof-viewer"
 import {
   Loader2,
@@ -29,8 +28,7 @@ import { CAMPAIGN_ABI, USDC_ADDRESS, USDC_ABI } from "@/lib/contracts"
 import { useChainId } from "wagmi"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-
-
+import { FarcasterEmbed } from "@/components/farcaster-embed"
 
 function getStateString(state: number): string {
   switch (state) {
@@ -55,13 +53,12 @@ export default function CampaignPage() {
   const { switchChain } = useSwitchChain()
   const [donationAmount, setDonationAmount] = useState("")
   const [step, setStep] = useState<"input" | "approve" | "donate">("input")
-
   
   // Network validation
   const isBaseNetwork = chainId === 8453
 
   // Validate campaign address
-  const isValidAddress = address && address.length === 42 && address.startsWith('0x')
+  const isValidAddress = Boolean(address && address.length === 42 && address.startsWith('0x'))
   
   console.log("CampaignPage Debug:", {
     address,
@@ -70,131 +67,6 @@ export default function CampaignPage() {
     chainId,
     isBaseNetwork,
     isValidAddress
-  })
-
-  // Read campaign data using the same pattern as /causes
-  const { data: title, error: titleError, isLoading: isTitleLoading } = useReadContract({
-    address: address as `0x${string}`,
-    abi: CAMPAIGN_ABI,
-    functionName: "title",
-  })
-
-  const { data: description, error: descriptionError, isLoading: isDescriptionLoading } = useReadContract({
-    address: address as `0x${string}`,
-    abi: CAMPAIGN_ABI,
-    functionName: "description",
-  })
-
-  const { data: goalAmount, error: goalError, isLoading: isGoalLoading } = useReadContract({
-    address: address as `0x${string}`,
-    abi: CAMPAIGN_ABI,
-    functionName: "goalAmount",
-  })
-
-  const { data: totalRaised, error: raisedError, isLoading: isRaisedLoading } = useReadContract({
-    address: address as `0x${string}`,
-    abi: CAMPAIGN_ABI,
-    functionName: "totalRaised",
-  })
-
-  const { data: creator, error: creatorError, isLoading: isCreatorLoading } = useReadContract({
-    address: address as `0x${string}`,
-    abi: CAMPAIGN_ABI,
-    functionName: "creator",
-  })
-
-  const { data: state, error: stateError, isLoading: isStateLoading } = useReadContract({
-    address: address as `0x${string}`,
-    abi: CAMPAIGN_ABI,
-    functionName: "state",
-  })
-
-  const { data: proofURI, error: proofError, isLoading: isProofLoading } = useReadContract({
-    address: address as `0x${string}`,
-    abi: CAMPAIGN_ABI,
-    functionName: "proofURI",
-  })
-
-  const { data: ensSubdomain, error: ensError, isLoading: isEnsLoading } = useReadContract({
-    address: address as `0x${string}`,
-    abi: CAMPAIGN_ABI,
-    functionName: "ensSubdomain",
-  })
-
-  const { data: userDonation, error: donationError, isLoading: isDonationLoading } = useReadContract({
-    address: address as `0x${string}`,
-    abi: CAMPAIGN_ABI,
-    functionName: "donations",
-    args: userAddress ? [userAddress] : undefined,
-  })
-
-  const { data: hasVoted, error: hasVotedError, isLoading: isHasVotedLoading } = useReadContract({
-    address: address as `0x${string}`,
-    abi: CAMPAIGN_ABI,
-    functionName: "hasVoted",
-    args: userAddress ? [userAddress] : undefined,
-  })
-
-  const { data: votingStatus, error: votingError, isLoading: isVotingLoading } = useReadContract({
-    address: address as `0x${string}`,
-    abi: CAMPAIGN_ABI,
-    functionName: "getVotingStatus",
-  })
-
-  const { data: usdcBalance, error: balanceError, isLoading: isBalanceLoading } = useReadContract({
-    address: USDC_ADDRESS[chainId as keyof typeof USDC_ADDRESS],
-    abi: USDC_ABI,
-    functionName: "balanceOf",
-    args: userAddress ? [userAddress] : undefined,
-  })
-
-  // Check for any errors
-  const hasErrors = titleError || descriptionError || goalError || raisedError || creatorError || stateError || proofError || ensError
-  const isLoading = isTitleLoading || isDescriptionLoading || isGoalLoading || isRaisedLoading || isCreatorLoading || isStateLoading || isProofLoading || isEnsLoading
-
-  console.log("Contract data:", {
-    title,
-    titleError,
-    isTitleLoading,
-    description,
-    descriptionError,
-    isDescriptionLoading,
-    goalAmount,
-    goalError,
-    isGoalLoading,
-    totalRaised,
-    raisedError,
-    isRaisedLoading,
-    creator,
-    creatorError,
-    isCreatorLoading,
-    state,
-    stateError,
-    isStateLoading,
-    proofURI,
-    proofError,
-    isProofLoading,
-    ensSubdomain,
-    ensError,
-    isEnsLoading,
-    userDonation,
-    donationError,
-    isDonationLoading,
-    hasVoted,
-    hasVotedError,
-    isHasVotedLoading,
-    votingStatus,
-    votingError,
-    isVotingLoading,
-    usdcBalance,
-    balanceError,
-    isBalanceLoading
-  })
-
-  console.log("Loading states:", {
-    hasErrors,
-    isLoading,
-    errors: { titleError, descriptionError, goalError, raisedError, creatorError, stateError, proofError, ensError }
   })
 
   // Contract interactions - MUST be called before any early returns
@@ -224,79 +96,181 @@ export default function CampaignPage() {
     hash: refundHash,
   })
 
+  // Read campaign data - ALL hooks must be called before any early returns
+  const { data: title, error: titleError, isLoading: isTitleLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "title",
+    query: { enabled: Boolean(isValidAddress) }
+  })
+
+  const { data: description, error: descriptionError, isLoading: isDescriptionLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "description",
+    query: { enabled: Boolean(isValidAddress) }
+  })
+
+  const { data: goalAmount, error: goalError, isLoading: isGoalLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "goalAmount",
+    query: { enabled: Boolean(isValidAddress) }
+  })
+
+  const { data: totalRaised, error: raisedError, isLoading: isRaisedLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "totalRaised",
+    query: { enabled: Boolean(isValidAddress) }
+  })
+
+  const { data: creator, error: creatorError, isLoading: isCreatorLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "creator",
+    query: { enabled: Boolean(isValidAddress) }
+  })
+
+  const { data: state, error: stateError, isLoading: isStateLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "state",
+    query: { enabled: Boolean(isValidAddress) }
+  })
+
+  const { data: proofURI, error: proofError, isLoading: isProofLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "proofURI",
+    query: { enabled: Boolean(isValidAddress) }
+  })
+
+  const { data: ensSubdomain, error: ensError, isLoading: isEnsLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "ensSubdomain",
+    query: { enabled: Boolean(isValidAddress) }
+  })
+
+  // User-specific data
+  const { data: userDonation, error: userDonationError, isLoading: isUserDonationLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "donations",
+    args: [userAddress as `0x${string}`],
+    query: { enabled: Boolean(userAddress && isConnected && isValidAddress) }
+  })
+
+  const { data: hasVoted, error: hasVotedError, isLoading: isHasVotedLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "hasVoted",
+    args: [userAddress as `0x${string}`],
+    query: { enabled: Boolean(userAddress && isConnected && isValidAddress) }
+  })
+
+  const { data: votingStatus, error: votingStatusError, isLoading: isVotingStatusLoading } = useReadContract({
+    address: address as `0x${string}`,
+    abi: CAMPAIGN_ABI,
+    functionName: "getVotingStatus",
+    query: { enabled: Boolean(Number(state || 0) === 1 && isValidAddress) }
+  })
+
+  // USDC balance
+  const { data: usdcBalance, error: usdcBalanceError, isLoading: isUsdcBalanceLoading } = useReadContract({
+    address: USDC_ADDRESS[chainId as keyof typeof USDC_ADDRESS],
+    abi: USDC_ABI,
+    functionName: "balanceOf",
+    args: [userAddress as `0x${string}`],
+    query: { enabled: !!userAddress && isConnected }
+  })
+
   // Early return for invalid address
   if (!isValidAddress) {
     console.log("Invalid address, showing error")
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            <Card>
-              <CardContent className="py-8">
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Invalid campaign address format. Please check the URL and try again.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
+      <>
+        <FarcasterEmbed 
+          title="❌ Invalid Campaign"
+          url="https://tu-causa.vercel.app/causes"
+        />
+        <div className="min-h-screen bg-background">
+          <Header />
+          <div className="container mx-auto px-4 py-8">
+            <div className="max-w-2xl mx-auto">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>Invalid campaign address</AlertDescription>
+              </Alert>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     )
   }
 
-  // Early return for loading state
-  if (isLoading) {
-    console.log("Still loading, showing loading state")
+  // Loading state
+  if (isTitleLoading || isDescriptionLoading || isGoalLoading || isRaisedLoading || isCreatorLoading || isStateLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            <Card>
-              <CardContent className="py-8">
-                <div className="flex items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                  <span>Loading campaign data...</span>
-                </div>
-              </CardContent>
-            </Card>
+      <>
+        <FarcasterEmbed 
+          title="💝 Support This Cause"
+          url={`https://tu-causa.vercel.app/campaign/${address}`}
+        />
+        <div className="min-h-screen bg-background">
+          <Header />
+          <div className="container mx-auto px-4 py-8">
+            <div className="flex justify-center items-center py-12">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading campaign...</p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     )
   }
 
-  // Early return if no campaign data
-  if (!title || !description || !goalAmount) {
-    console.log("No campaign data found, showing error")
+  // Error state
+  if (titleError || descriptionError || goalError || raisedError || creatorError || stateError) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            <Card>
-              <CardContent className="py-8">
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Campaign data not found. This campaign may not exist or may have been removed.
-                  </AlertDescription>
-                </Alert>
-                <div className="mt-4">
-                  <Button asChild>
-                    <Link href="/causes">Browse Other Causes</Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+      <>
+        <FarcasterEmbed 
+          title="❌ Error Loading Campaign"
+          url="https://tu-causa.vercel.app/causes"
+        />
+        <div className="min-h-screen bg-background">
+          <Header />
+          <div className="container mx-auto px-4 py-8">
+            <div className="max-w-2xl mx-auto">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>Failed to load campaign data</AlertDescription>
+              </Alert>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     )
+  }
+
+  // Check if user is creator
+  const isCreator = userAddress && creator && userAddress.toLowerCase() === creator.toLowerCase()
+  const isDonor = userAddress && userDonation && Number(userDonation) > 0
+  const canVote = isConnected && isDonor && Number(state || 0) === 1 && !hasVoted
+
+  // Helper function to format time remaining
+  const formatTimeRemaining = (seconds: number) => {
+    if (seconds <= 0) return "Voting ended"
+    const days = Math.floor(seconds / 86400)
+    const hours = Math.floor((seconds % 86400) / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    
+    if (days > 0) return `${days}d ${hours}h remaining`
+    if (hours > 0) return `${hours}h ${minutes}m remaining`
+    return `${minutes}m remaining`
   }
 
   console.log("Rendering campaign page with data:", { title, description, goalAmount })
@@ -397,7 +371,6 @@ export default function CampaignPage() {
         address: address as `0x${string}`,
         abi: CAMPAIGN_ABI,
         functionName: "claimFunds",
-        args: [],
       })
     } catch (err) {
       console.error("Error claiming funds:", err)
@@ -417,446 +390,384 @@ export default function CampaignPage() {
         address: address as `0x${string}`,
         abi: CAMPAIGN_ABI,
         functionName: "claimRefund",
-        args: [],
       })
     } catch (err) {
       console.error("Error claiming refund:", err)
     }
   }
 
-  // Auto-progress to donation step after approval
-  if (isApproveConfirmed && step === "approve") {
-    handleDonate()
-  }
-
-  // Reset form after successful donation
-  if (isDonateConfirmed && step === "donate") {
-    setDonationAmount("")
-    setStep("input")
-  }
-
-  const isCreator = creator && userAddress && creator.toLowerCase() === userAddress.toLowerCase()
-  const isDonor = Number(userDonation || 0) > 0
-  const canVote = isDonor && Number(state || 0) === 1 && !hasVoted && timeRemaining > 0
-
-  const formatTimeRemaining = (seconds: number) => {
-    if (seconds <= 0) return "Voting ended"
-    const days = Math.floor(seconds / 86400)
-    const hours = Math.floor((seconds % 86400) / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-
-    if (days > 0) return `${days}d ${hours}h remaining`
-    if (hours > 0) return `${hours}h ${minutes}m remaining`
-    return `${minutes}m remaining`
-  }
-
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <>
+      <FarcasterEmbed 
+        title="💝 Support This Cause"
+        url={`https://tu-causa.vercel.app/campaign/${address}`}
+      />
+      <div className="min-h-screen bg-background">
+        <Header />
 
-      {/* Network Warning */}
-      {isConnected && !isBaseNetwork && (
-        <Alert className="mx-4 mt-4 mb-0 border-red-500 bg-red-50">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <strong>⚠️ Wrong Network Detected!</strong> You are currently on {chainId === 1 ? "Ethereum Mainnet" : `Chain ${chainId}`}. 
-                TuCausa only works on Base network.
+        {/* Network Warning */}
+        {isConnected && !isBaseNetwork && (
+          <Alert className="mx-4 mt-4 mb-0 border-red-500 bg-red-50">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <strong>⚠️ Wrong Network Detected!</strong> You are currently on {chainId === 1 ? "Ethereum Mainnet" : `Chain ${chainId}`}. 
+                  TuCausa only works on Base network.
+                </div>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => switchChain({ chainId: 8453 })}
+                  className="bg-red-600 hover:bg-red-700 ml-4"
+                >
+                  Switch to Base
+                </Button>
               </div>
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={() => switchChain({ chainId: 8453 })}
-                className="bg-red-600 hover:bg-red-700 ml-4"
-              >
-                Switch to Base
-              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            {/* Campaign Header */}
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Badge variant={
+                  statusInfo === "Active" ? "default" : 
+                  statusInfo === "Under Review" ? "secondary" : 
+                  statusInfo === "Completed" ? "outline" : "destructive"
+                }>
+                  {statusInfo}
+                </Badge>
+                {isCreator && <Badge variant="outline">Your Campaign</Badge>}
+              </div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">{title}</h1>
+              <p className="text-muted-foreground">{description}</p>
             </div>
-          </AlertDescription>
-        </Alert>
-      )}
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Campaign Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Badge variant={
-                statusInfo === "Active" ? "default" : 
-                statusInfo === "Under Review" ? "secondary" : 
-                statusInfo === "Completed" ? "outline" : "destructive"
-              }>
-                {statusInfo}
-              </Badge>
-              {isCreator && <Badge variant="outline">Your Campaign</Badge>}
-            </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">{title}</h1>
-            <p className="text-muted-foreground">{description}</p>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Progress Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Heart className="h-5 w-5 text-primary" />
-                    Funding Progress
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-muted-foreground">Raised</span>
-                        <span className="font-medium">
-                          ${raisedFormatted} / ${goalFormatted} USDC
-                        </span>
-                      </div>
-                      <Progress value={progressPercentage} className="h-3" />
-                      <p className="text-xs text-muted-foreground mt-1">{progressPercentage.toFixed(1)}% funded</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-primary">${raisedFormatted}</p>
-                        <p className="text-sm text-muted-foreground">Total Raised</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-foreground">${goalFormatted}</p>
-                        <p className="text-sm text-muted-foreground">Goal Amount</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {Number(state || 0) >= 1 && proofURI && <ProofViewer proofURI={proofURI as string} />}
-
-              {Number(state || 0) === 1 && (
+            <div className="grid lg:grid-cols-3 gap-8">
+              {/* Main Content */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Progress Card */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5 text-primary" />
-                      Community Voting
+                      <Heart className="h-5 w-5 text-primary" />
+                      Funding Progress
                     </CardTitle>
-                    <CardDescription>Donors are reviewing the proof and voting on completion</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <p className="text-2xl font-bold text-green-600">{votesForSolved}</p>
-                        <p className="text-sm text-muted-foreground">Solved</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-red-600">{votesForNotSolved}</p>
-                        <p className="text-sm text-muted-foreground">Not Solved</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-foreground">{totalDonors}</p>
-                        <p className="text-sm text-muted-foreground">Total Donors</p>
-                      </div>
-                    </div>
-
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">{formatTimeRemaining(timeRemaining)}</span>
-                      </div>
-                      <Progress value={totalDonors > 0 ? (votesForSolved / totalDonors) * 100 : 0} className="h-2" />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {totalDonors > 0 ? Math.round((votesForSolved / totalDonors) * 100) : 0}% approval rate
-                      </p>
-                    </div>
-
-                    {canVote && (
-                      <div className="flex gap-3 pt-4 border-t">
-                        <Button
-                          onClick={() => handleVote(true)}
-                          disabled={isVoting || isVoteConfirming}
-                          className="flex-1"
-                        >
-                          {isVoting || isVoteConfirming ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <ThumbsUp className="mr-2 h-4 w-4" />
-                          )}
-                          Mark as Solved
-                        </Button>
-                        <Button
-                          onClick={() => handleVote(false)}
-                          disabled={isVoting || isVoteConfirming}
-                          variant="destructive"
-                          className="flex-1"
-                        >
-                          {isVoting || isVoteConfirming ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <ThumbsDown className="mr-2 h-4 w-4" />
-                          )}
-                          Not Solved
-                        </Button>
-                      </div>
-                    )}
-
-                    {isDonor && hasVoted && (
-                      <Alert>
-                        <CheckCircle className="h-4 w-4" />
-                        <AlertDescription>You have already voted on this campaign</AlertDescription>
-                      </Alert>
-                    )}
-
-                    {isVoteConfirmed && (
-                      <Alert>
-                        <CheckCircle className="h-4 w-4" />
-                        <AlertDescription>Your vote has been recorded successfully!</AlertDescription>
-                      </Alert>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Campaign Details */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Campaign Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">Description</h3>
-                    <p className="text-muted-foreground leading-relaxed">{description}</p>
-                  </div>
-
-                  <Separator />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Creator</p>
-                      <p className="font-mono text-sm">
-                        {creator ? `${creator.slice(0, 6)}...${creator.slice(-4)}` : "Loading..."}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Status</p>
-                      <p className={`font-medium ${
-                        statusInfo === "Active" ? "text-primary" :
-                        statusInfo === "Under Review" ? "text-yellow-600" :
-                        statusInfo === "Completed" ? "text-green-600" : "text-red-600"
-                      }`}>
-                        {statusInfo}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Donation Sidebar */}
-            <div className="space-y-6">
-              {/* Donation Card */}
-              {Number(state || 0) === 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Make a Donation</CardTitle>
-                    <CardDescription>Support this cause with USDC</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {!isConnected ? (
-                      <Alert>
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>Connect your wallet to donate</AlertDescription>
-                      </Alert>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="amount">Donation Amount (USDC)</Label>
-                          <Input
-                            id="amount"
-                            type="number"
-                            placeholder="100"
-                            value={donationAmount}
-                            onChange={(e) => setDonationAmount(e.target.value)}
-                            min="0.01"
-                            step="0.01"
-                          />
-                          <p className="text-xs text-muted-foreground">Your USDC balance: ${usdcBalanceFormatted}</p>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-muted-foreground">Raised</span>
+                          <span className="font-medium">
+                            ${raisedFormatted} / ${goalFormatted} USDC
+                          </span>
                         </div>
-
-                        <Button
-                          onClick={step === "input" ? handleApprove : handleDonate}
-                          className="w-full"
-                          disabled={
-                            !donationAmount ||
-                            isApproving ||
-                            isApproveConfirming ||
-                            isDonating ||
-                            isDonateConfirming ||
-                            Number(donationAmount) <= 0
-                          }
-                        >
-                          {isApproving || isApproveConfirming ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Approving USDC...
-                            </>
-                          ) : isDonating || isDonateConfirming ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Donating...
-                            </>
-                          ) : step === "input" ? (
-                            "Donate Now"
-                          ) : (
-                            "Confirm Donation"
-                          )}
-                        </Button>
-
-                        {isDonateConfirmed && (
-                          <Alert>
-                            <CheckCircle className="h-4 w-4" />
-                            <AlertDescription>Thank you for your donation!</AlertDescription>
-                          </Alert>
-                        )}
+                        <Progress value={progressPercentage} className="h-3" />
+                        <p className="text-xs text-muted-foreground mt-1">{progressPercentage.toFixed(1)}% funded</p>
                       </div>
-                    )}
+
+                      <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-primary">${raisedFormatted}</p>
+                          <p className="text-sm text-muted-foreground">Total Raised</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-foreground">${goalFormatted}</p>
+                          <p className="text-sm text-muted-foreground">Goal Amount</p>
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              )}
 
-              {/* Creator Fund Claim */}
-              {isCreator && Number(state || 0) === 2 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5 text-primary" />
-                      Claim Funds
-                    </CardTitle>
-                    <CardDescription>Your campaign was approved by the community</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center mb-4">
-                      <p className="text-2xl font-bold text-primary">${raisedFormatted}</p>
-                      <p className="text-sm text-muted-foreground">Available to claim</p>
-                    </div>
-                    <Button onClick={handleClaimFunds} disabled={isClaiming || isClaimConfirming} className="w-full">
-                      {isClaiming || isClaimConfirming ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Claiming...
-                        </>
-                      ) : (
-                        "Claim Funds"
+                {Number(state || 0) >= 1 && proofURI && <ProofViewer proofURI={proofURI as string} />}
+
+                {Number(state || 0) === 1 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5 text-primary" />
+                        Community Voting
+                      </CardTitle>
+                      <CardDescription>Donors are reviewing the proof and voting on completion</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                          <p className="text-2xl font-bold text-green-600">{votesForSolved}</p>
+                          <p className="text-sm text-muted-foreground">Solved</p>
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-red-600">{votesForNotSolved}</p>
+                          <p className="text-sm text-muted-foreground">Not Solved</p>
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-foreground">{totalDonors}</p>
+                          <p className="text-sm text-muted-foreground">Total Donors</p>
+                        </div>
+                      </div>
+
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">{formatTimeRemaining(timeRemaining)}</span>
+                        </div>
+                        <Progress value={totalDonors > 0 ? (votesForSolved / totalDonors) * 100 : 0} className="h-2" />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {totalDonors > 0 ? Math.round((votesForSolved / totalDonors) * 100) : 0}% approval rate
+                        </p>
+                      </div>
+
+                      {canVote && (
+                        <div className="flex gap-3 pt-4 border-t">
+                          <Button
+                            onClick={() => handleVote(true)}
+                            disabled={isVoting || isVoteConfirming}
+                            className="flex-1"
+                          >
+                            {isVoting || isVoteConfirming ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <ThumbsUp className="mr-2 h-4 w-4" />
+                            )}
+                            Mark as Solved
+                          </Button>
+                          <Button
+                            onClick={() => handleVote(false)}
+                            disabled={isVoting || isVoteConfirming}
+                            variant="destructive"
+                            className="flex-1"
+                          >
+                            {isVoting || isVoteConfirming ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <ThumbsDown className="mr-2 h-4 w-4" />
+                            )}
+                            Mark as Not Solved
+                          </Button>
+                        </div>
                       )}
-                    </Button>
-                    {isClaimConfirmed && (
-                      <Alert className="mt-4">
-                        <CheckCircle className="h-4 w-4" />
-                        <AlertDescription>Funds claimed successfully!</AlertDescription>
-                      </Alert>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
 
-              {/* Donor Refund */}
-              {isDonor && Number(state || 0) === 3 && Number(userDonation || 0) > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5 text-destructive" />
-                      Claim Refund
-                    </CardTitle>
-                    <CardDescription>Campaign was not approved by the community</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center mb-4">
-                      <p className="text-2xl font-bold text-destructive">${userDonationFormatted}</p>
-                      <p className="text-sm text-muted-foreground">Available for refund</p>
-                    </div>
-                    <Button
-                      onClick={handleClaimRefund}
-                      disabled={isRefunding || isRefundConfirming}
-                      variant="destructive"
-                      className="w-full"
-                    >
-                      {isRefunding || isRefundConfirming ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        "Claim Refund"
+                      {isVoteConfirmed && (
+                        <Alert>
+                          <CheckCircle className="h-4 w-4" />
+                          <AlertDescription>Your vote has been recorded!</AlertDescription>
+                        </Alert>
                       )}
-                    </Button>
-                    {isRefundConfirmed && (
-                      <Alert className="mt-4">
-                        <CheckCircle className="h-4 w-4" />
-                        <AlertDescription>Refund processed successfully!</AlertDescription>
-                      </Alert>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
 
-              {/* User Stats */}
-              {isConnected && Number(userDonation || 0) > 0 && (
+              {/* Donation Sidebar */}
+              <div className="space-y-6">
+                {/* Donation Card */}
+                {Number(state || 0) === 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Make a Donation</CardTitle>
+                      <CardDescription>Support this cause with USDC</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {!isConnected ? (
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>Connect your wallet to donate</AlertDescription>
+                        </Alert>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="amount">Donation Amount (USDC)</Label>
+                            <Input
+                              id="amount"
+                              type="number"
+                              placeholder="100"
+                              value={donationAmount}
+                              onChange={(e) => setDonationAmount(e.target.value)}
+                              min="0.01"
+                              step="0.01"
+                            />
+                            <p className="text-xs text-muted-foreground">Your USDC balance: ${usdcBalanceFormatted}</p>
+                          </div>
+
+                          <Button
+                            onClick={step === "input" ? handleApprove : handleDonate}
+                            className="w-full"
+                            disabled={
+                              !donationAmount ||
+                              isApproving ||
+                              isApproveConfirming ||
+                              isDonating ||
+                              isDonateConfirming ||
+                              Number(donationAmount) <= 0
+                            }
+                          >
+                            {isApproving || isApproveConfirming ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Approving USDC...
+                              </>
+                            ) : isDonating || isDonateConfirming ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Donating...
+                              </>
+                            ) : step === "input" ? (
+                              "Donate Now"
+                            ) : (
+                              "Confirm Donation"
+                            )}
+                          </Button>
+
+                          {isDonateConfirmed && (
+                            <Alert>
+                              <CheckCircle className="h-4 w-4" />
+                              <AlertDescription>Thank you for your donation!</AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Creator Fund Claim */}
+                {isCreator && Number(state || 0) === 2 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <DollarSign className="h-5 w-5 text-primary" />
+                        Claim Funds
+                      </CardTitle>
+                      <CardDescription>Your campaign was approved by the community</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center mb-4">
+                        <p className="text-2xl font-bold text-primary">${raisedFormatted}</p>
+                        <p className="text-sm text-muted-foreground">Available to claim</p>
+                      </div>
+                      <Button onClick={handleClaimFunds} disabled={isClaiming || isClaimConfirming} className="w-full">
+                        {isClaiming || isClaimConfirming ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          "Claim Funds"
+                        )}
+                      </Button>
+                      {isClaimConfirmed && (
+                        <Alert className="mt-4">
+                          <CheckCircle className="h-4 w-4" />
+                          <AlertDescription>Funds claimed successfully!</AlertDescription>
+                        </Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Donor Refund Claim */}
+                {isDonor && Number(state || 0) === 3 && Number(userDonation || 0) > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <DollarSign className="h-5 w-5 text-destructive" />
+                        Claim Refund
+                      </CardTitle>
+                      <CardDescription>Campaign was not approved by the community</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center mb-4">
+                        <p className="text-2xl font-bold text-destructive">${userDonationFormatted}</p>
+                        <p className="text-sm text-muted-foreground">Available for refund</p>
+                      </div>
+                      <Button
+                        onClick={handleClaimRefund}
+                        disabled={isRefunding || isRefundConfirming}
+                        variant="destructive"
+                        className="w-full"
+                      >
+                        {isRefunding || isRefundConfirming ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          "Claim Refund"
+                        )}
+                      </Button>
+                      {isRefundConfirmed && (
+                        <Alert className="mt-4">
+                          <CheckCircle className="h-4 w-4" />
+                          <AlertDescription>Refund processed successfully!</AlertDescription>
+                        </Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* User Stats */}
+                {isConnected && Number(userDonation || 0) > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Your Contribution
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-primary">${userDonationFormatted}</p>
+                        <p className="text-sm text-muted-foreground">Total Donated</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Campaign Actions for Creator */}
+                {isCreator && Number(state || 0) === 0 && Number(totalRaised || 0) > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Campaign Actions</CardTitle>
+                      <CardDescription>Manage your campaign</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button asChild className="w-full">
+                        <Link href={`/campaign/${address}/submit-proof`}>Submit Proof</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* External Links */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Your Contribution
-                    </CardTitle>
+                    <CardTitle>Links</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-primary">${userDonationFormatted}</p>
-                      <p className="text-sm text-muted-foreground">Total Donated</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Campaign Actions for Creator */}
-              {isCreator && Number(state || 0) === 0 && Number(totalRaised || 0) > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Campaign Actions</CardTitle>
-                    <CardDescription>Manage your campaign</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button asChild className="w-full">
-                      <Link href={`/campaign/${address}/submit-proof`}>Submit Proof</Link>
+                  <CardContent className="space-y-2">
+                    <Button variant="outline" className="w-full justify-start bg-transparent" asChild>
+                      <Link href={`https://basescan.org/address/${address}`} target="_blank">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        View on BaseScan
+                      </Link>
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start bg-transparent" asChild>
+                      <Link href="/causes">
+                        <Heart className="mr-2 h-4 w-4" />
+                        Browse Other Causes
+                      </Link>
                     </Button>
                   </CardContent>
                 </Card>
-              )}
-
-              {/* External Links */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Links</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start bg-transparent" asChild>
-                    <Link href={`https://basescan.org/address/${address}`} target="_blank">
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      View on BaseScan
-                    </Link>
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start bg-transparent" asChild>
-                    <Link href="/causes">
-                      <Heart className="mr-2 h-4 w-4" />
-                      Browse Other Causes
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

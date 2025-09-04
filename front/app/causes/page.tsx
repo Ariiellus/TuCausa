@@ -9,13 +9,9 @@ import Link from "next/link"
 import { CAMPAIGN_FACTORY_ADDRESS, CAMPAIGN_FACTORY_ABI } from "@/lib/contracts"
 import { useReadContract } from "wagmi"
 import { CampaignCard } from "@/components/campaign-card"
-
-
-
-
+import { FarcasterEmbed } from "@/components/farcaster-embed"
 
 export default function CausesPage() {
-
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -88,7 +84,12 @@ export default function CausesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <FarcasterEmbed 
+        title="📋 Browse Causes"
+        url="https://tu-causa.vercel.app/causes"
+      />
+      <div className="min-h-screen bg-background">
       <Header />
 
       <div className="container mx-auto px-4 py-8">
@@ -132,6 +133,7 @@ export default function CausesPage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   )
 }

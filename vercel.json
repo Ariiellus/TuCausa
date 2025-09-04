@@ -16,6 +16,13 @@
       "destination": "/campaign/[address]"
     }
   ],
+  "redirects": [
+    {
+      "source": "/.well-known/farcaster.json",
+      "destination": "https://api.farcaster.xyz/miniapps/hosted-manifest/0198ffe3-6665-f7c5-6552-b056563a2a66",
+      "permanent": false
+    }
+  ],
   "headers": [
     {
       "source": "/campaign/(.*)",
